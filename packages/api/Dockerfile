@@ -1,5 +1,6 @@
 FROM node:22-alpine AS base
 WORKDIR /repo
+RUN apk add --no-cache openssl
 
 FROM base AS deps
 COPY package.json ./
@@ -16,6 +17,7 @@ RUN npm run build --workspace=packages/api
 
 FROM node:22-alpine AS runner
 WORKDIR /repo
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 COPY --from=build /repo/node_modules ./node_modules
 COPY --from=build /repo/packages/shared ./packages/shared

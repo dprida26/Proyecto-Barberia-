@@ -45,8 +45,19 @@ La web queda en `http://localhost:3000`, la API en `http://localhost:3001`.
 ## Docker Compose (stack completo)
 
 ```bash
-docker compose up --build
+docker compose up -d --build
+
+# primera vez: poblar datos de ejemplo dentro del contenedor
+docker compose exec api npm run db:seed
 ```
+
+Puertos publicados (elegidos para no chocar con otros proyectos en la misma máquina):
+
+- Web: `http://localhost:3010`
+- API: `http://localhost:3011`
+- Postgres: `localhost:5434`
+
+Las migraciones (`prisma migrate deploy`) corren automáticamente al iniciar el contenedor `api`.
 
 ## Tests
 
