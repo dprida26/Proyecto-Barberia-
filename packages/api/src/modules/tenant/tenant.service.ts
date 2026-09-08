@@ -12,6 +12,15 @@ export async function getTenantSettings(tenantId: string) {
   return tenant;
 }
 
+export async function getPublicTenantBranding() {
+  const tenant = await prisma.tenant.findFirst({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: { name: true, logoUrl: true },
+  });
+  return tenant ?? { name: "BarberOps", logoUrl: null };
+}
+
 export async function updateTenantSettings(
   tenantId: string,
   input: UpdateTenantSettingsInput,

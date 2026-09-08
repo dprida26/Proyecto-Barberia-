@@ -17,6 +17,20 @@ export function useTenantSettings() {
   });
 }
 
+interface TenantBranding {
+  name: string;
+  logoUrl: string | null;
+}
+
+export function useTenantBranding() {
+  return useQuery({
+    queryKey: ["tenant", "public"],
+    queryFn: () => apiClient.get<{ data: TenantBranding }>("/api/v1/tenant/public", { skipAuth: true }),
+    select: (res) => res.data,
+    staleTime: 60_000,
+  });
+}
+
 export function useUpdateTenantSettings() {
   const queryClient = useQueryClient();
   return useMutation({

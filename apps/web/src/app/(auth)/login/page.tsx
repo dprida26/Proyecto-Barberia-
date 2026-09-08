@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLogin } from "@/features/auth/use-login";
+import { useTenantBranding } from "@/features/tenant-settings/use-tenant-settings";
+import { apiBaseUrl } from "@/lib/env";
 import { ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useLogin();
+  const { data: branding } = useTenantBranding();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,10 +35,21 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <span className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Scissors className="h-6 w-6" />
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">BarberOps</h1>
+          {branding?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${apiBaseUrl}${branding.logoUrl}`}
+              alt={branding.name}
+              className="mb-2 h-12 w-12 rounded-xl object-cover"
+            />
+          ) : (
+            <span className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Scissors className="h-6 w-6" />
+            </span>
+          )}
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {branding?.name ?? "BarberOps"}
+          </h1>
           <p className="text-sm text-muted-foreground">Ingresa a tu cuenta para continuar</p>
         </CardHeader>
 

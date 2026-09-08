@@ -6,7 +6,7 @@ import { updateTenantSettingsSchema } from "@barberops/shared";
 import { authGuard, roleGuard } from "../../common/guards";
 import { ValidationError } from "../../common/errors";
 import { env } from "../../config/env";
-import { getTenantSettings, updateTenantLogo, updateTenantSettings } from "./tenant.service";
+import { getPublicTenantBranding, getTenantSettings, updateTenantLogo, updateTenantSettings } from "./tenant.service";
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
   "image/png": ".png",
@@ -15,6 +15,11 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
 };
 
 export async function tenantRoutes(app: FastifyInstance) {
+  app.get("/tenant/public", async () => {
+    const branding = await getPublicTenantBranding();
+    return { data: branding };
+  });
+
   app.get("/tenant/settings", { preHandler: [authGuard] }, async (request) => {
     const tenant = await getTenantSettings(request.user.tenantId);
     return { data: tenant };
