@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3, Clock, Download, Receipt, Ticket } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 import type { ReportPeriod } from "@barberops/shared";
 import { REPORT_PERIODS } from "@barberops/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,15 +12,33 @@ import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { PERIOD_LABELS, resolvePeriod } from "@/features/reports/period";
 import { useExportCsvUrl, useReportSummary } from "@/features/reports/use-report-summary";
+import { DateRangePicker } from "@/features/reports/DateRangePicker";
 
 const CHART_COLOR = "hsl(221 83% 53%)";
 
 export default function ReportesPage() {
   const [period, setPeriod] = useState<ReportPeriod>("THIS_WEEK");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
 
-  const range = useMemo(() => resolvePeriod(period), [period]);
+  const range = useMemo(() => {
+    if (period === "CUSTOM" && customRange?.from) {
+      return resolvePeriod("CUSTOM", {
+        from: customRange.from.toISOString(),
+        to: (customRange.to ?? customRange.from).toISOString(),
+      });
+    }
+    return resolvePeriod(period);
+  }, [period, customRange]);
+
   const { data, isLoading } = useReportSummary(range);
   const { download } = useExportCsvUrl(range);
+
+  function handleCustomRangeChange(newRange: DateRange | undefined) {
+    setCustomRange(newRange);
+    if (newRange?.from) {
+      setPeriod("CUSTOM");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,7 +54,7 @@ export default function ReportesPage() {
       </div>
 
       <Card>
-        <CardContent className="flex flex-wrap gap-2 p-4">
+        <CardContent className="flex flex-wrap items-center gap-2 p-4">
           {REPORT_PERIODS.filter((p) => p !== "CUSTOM").map((p) => (
             <button
               key={p}
@@ -50,6 +69,13 @@ export default function ReportesPage() {
               {PERIOD_LABELS[p]}
             </button>
           ))}
+          <div className="ml-auto">
+            <DateRangePicker
+              range={customRange}
+              onRangeChange={handleCustomRangeChange}
+              active={period === "CUSTOM"}
+            />
+          </div>
         </CardContent>
       </Card>
 
