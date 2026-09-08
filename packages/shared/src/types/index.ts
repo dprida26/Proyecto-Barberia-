@@ -1,0 +1,97 @@
+import type {
+  UserRole,
+  BarberStatus,
+  ServiceSessionStatus,
+} from "../constants";
+
+export interface AuthUser {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: UserRole;
+  displayName: string;
+}
+
+export interface ServiceCatalogItem {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  durationEstimateMin: number;
+  currentPrice: string;
+  commissionPercent: string | null;
+  isActive: boolean;
+}
+
+export interface BarberSummary {
+  id: string;
+  tenantId: string;
+  displayName: string;
+  isAvailable: boolean;
+  currentStatus: BarberStatus;
+  activeSession: ActiveServiceSession | null;
+}
+
+export interface ActiveServiceSession {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  startedAt: string;
+  clientNameFree: string | null;
+}
+
+export interface ServiceSessionRecord {
+  id: string;
+  tenantId: string;
+  barberId: string;
+  barberName: string;
+  serviceId: string;
+  serviceName: string;
+  clientNameFree: string | null;
+  observations: string | null;
+  priceAtStart: string;
+  status: ServiceSessionStatus;
+  startedAt: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  cancelReason: string | null;
+}
+
+export interface DashboardLiveSnapshot {
+  barbers: BarberSummary[];
+  kpis: {
+    servicesToday: number;
+    servicesInProgress: number;
+    barbersActive: number;
+    barbersAvailable: number;
+    revenueToday: string;
+  };
+}
+
+export interface ReportSummary {
+  range: { from: string; to: string };
+  totals: {
+    servicesCount: number;
+    revenue: string;
+    avgTicket: string;
+    avgDurationSeconds: number;
+  };
+  byBarber: Array<{
+    barberId: string;
+    barberName: string;
+    servicesCount: number;
+    revenue: string;
+    avgDurationSeconds: number;
+  }>;
+  byService: Array<{
+    serviceId: string;
+    serviceName: string;
+    servicesCount: number;
+    revenue: string;
+  }>;
+  byHour: Array<{ hour: number; servicesCount: number }>;
+  topService: { serviceId: string; serviceName: string; servicesCount: number } | null;
+  topBarberByServices: { barberId: string; barberName: string; servicesCount: number } | null;
+  topBarberByRevenue: { barberId: string; barberName: string; revenue: string } | null;
+}
