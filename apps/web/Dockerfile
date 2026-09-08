@@ -8,6 +8,8 @@ COPY apps/web/package.json apps/web/package.json
 RUN npm install --workspaces --include-workspace-root=false --workspace=packages/shared --workspace=apps/web
 
 FROM deps AS build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 RUN npm run build --workspace=packages/shared

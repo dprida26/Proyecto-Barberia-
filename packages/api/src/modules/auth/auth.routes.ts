@@ -3,6 +3,7 @@ import { loginSchema } from "@barberops/shared";
 import { validateCredentials } from "./auth.service";
 import { authGuard } from "../../common/guards";
 import type { JwtPayload } from "../../common/types";
+import { env } from "../../config/env";
 
 export async function authRoutes(app: FastifyInstance) {
   app.post("/auth/login", async (request, reply) => {
@@ -22,7 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
     reply
       .setCookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: env.corsOrigin.startsWith("https://"),
         sameSite: "lax",
         path: "/api/v1/auth",
         maxAge: 60 * 60 * 24 * 7,
