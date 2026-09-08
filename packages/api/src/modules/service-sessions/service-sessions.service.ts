@@ -152,11 +152,46 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  return prisma.serviceSession.findMany({
+  const sessions = await prisma.serviceSession.findMany({
     where: { barberId: barber.id, tenantId, startedAt: { gte: startOfDay } },
     include: { service: { select: { name: true } } },
     orderBy: { startedAt: "desc" },
   });
+
+  return sessions.map(({ service, ...session }) => ({ ...session, serviceName: service.name }));
+}
+
+export async function getMySummary(tenantId: string, barberUserId: string, period: "week" | "month") {
+  const barber = await prisma.barber.findFirst({ where: { tenantId, userId: barberUserId } });
+  if (!barber) throw new NotFoundError("Barbero no encontrado");
+
+  const from = new Date();
+  from.setHours(0, 0, 0, 0);
+  if (period === "week") {
+    const day = from.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    from.setDate(from.getDate() - diff);
+  } else {
+    from.setDate(1);
+  }
+
+  const sessions = await prisma.serviceSession.findMany({
+    where: { barberId: barber.id, tenantId, status: "COMPLETED", startedAt: { gte: from } },
+    include: { service: { select: { name: true } } },
+  });
+
+  const byServiceMap = new Map<string, { serviceName: string; count: number }>();
+  for (const session of sessions) {
+    const entry = byServiceMap.get(session.serviceId) ?? { serviceName: session.service.name, count: 0 };
+    entry.count += 1;
+    byServiceMap.set(session.serviceId, entry);
+  }
+
+  const byService = Array.from(byServiceMap.entries())
+    .map(([serviceId, v]) => ({ serviceId, serviceName: v.serviceName, count: v.count }))
+    .sort((a, b) => b.count - a.count);
+
+  return { totalCount: sessions.length, byService };
 }
 
 export async function listServiceSessions(

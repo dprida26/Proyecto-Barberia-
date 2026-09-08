@@ -14,9 +14,11 @@ import {
   useActiveServices,
   useCancelService,
   useFinishService,
+  useMySummary,
   useMyTodaySessions,
   useStartService,
 } from "@/features/barber-session/use-barber-session";
+import { ServiceSummarySection } from "@/features/barber-session/ServiceSummarySection";
 import { useSessionStore } from "@/stores/session.store";
 
 function BarberScreen() {
@@ -25,6 +27,8 @@ function BarberScreen() {
 
   const { data: services, isLoading: loadingServices } = useActiveServices();
   const { data: todaySessions } = useMyTodaySessions();
+  const { data: weekSummary } = useMySummary("week");
+  const { data: monthSummary } = useMySummary("month");
   const startService = useStartService();
   const finishService = useFinishService();
   const cancelService = useCancelService();
@@ -42,6 +46,20 @@ function BarberScreen() {
     () => todaySessions?.filter((s) => s.status === "COMPLETED") ?? [],
     [todaySessions],
   );
+
+  const todayByService = useMemo(() => {
+    const map = new Map<string, { serviceId: string; label: string; count: number }>();
+    for (const session of completedToday) {
+      const entry = map.get(session.serviceId) ?? {
+        serviceId: session.serviceId,
+        label: session.serviceName,
+        count: 0,
+      };
+      entry.count += 1;
+      map.set(session.serviceId, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [completedToday]);
 
   const { formatted: elapsed } = useElapsedTime(activeSession?.startedAt ?? null);
 
@@ -148,28 +166,39 @@ function BarberScreen() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Hoy</CardTitle>
-          <Badge variant="primary">{completedToday.length} servicios</Badge>
-        </CardHeader>
-        <CardContent>
-          {completedToday.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aun no completaste servicios hoy.</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-border">
-              {completedToday.map((session) => (
-                <li key={session.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-foreground">{session.serviceName}</span>
-                  <span className="text-muted-foreground">
-                    {session.durationSeconds ? Math.round(session.durationSeconds / 60) : 0} min
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <ServiceSummarySection
+        title="Hoy"
+        totalCount={completedToday.length}
+        items={todayByService.map((item) => ({ key: item.serviceId, label: item.label, count: item.count }))}
+        emptyLabel="Aun no completaste servicios hoy."
+        defaultOpen
+      />
+
+      <ServiceSummarySection
+        title="Esta semana"
+        totalCount={weekSummary?.totalCount ?? 0}
+        items={
+          weekSummary?.byService.map((item) => ({
+            key: item.serviceId,
+            label: item.serviceName,
+            count: item.count,
+          })) ?? []
+        }
+        emptyLabel="Aun no completaste servicios esta semana."
+      />
+
+      <ServiceSummarySection
+        title="Este mes"
+        totalCount={monthSummary?.totalCount ?? 0}
+        items={
+          monthSummary?.byService.map((item) => ({
+            key: item.serviceId,
+            label: item.serviceName,
+            count: item.count,
+          })) ?? []
+        }
+        emptyLabel="Aun no completaste servicios este mes."
+      />
     </main>
   );
 }

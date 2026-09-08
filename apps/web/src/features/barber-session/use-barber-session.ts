@@ -27,6 +27,27 @@ export function useMyTodaySessions() {
   });
 }
 
+export interface MySummaryByService {
+  serviceId: string;
+  serviceName: string;
+  count: number;
+}
+
+export interface MySummary {
+  totalCount: number;
+  byService: MySummaryByService[];
+}
+
+export function useMySummary(period: "week" | "month") {
+  return useQuery({
+    queryKey: ["service-sessions", "mine", "summary", period],
+    queryFn: () =>
+      apiClient.get<ApiItemResponse<MySummary>>(`/api/v1/service-sessions/mine/summary?period=${period}`),
+    select: (res) => res.data,
+    refetchInterval: 60_000,
+  });
+}
+
 export function useStartService() {
   const queryClient = useQueryClient();
   return useMutation({

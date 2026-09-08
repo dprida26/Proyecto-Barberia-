@@ -4,6 +4,7 @@ import { authGuard, roleGuard } from "../../common/guards";
 import {
   cancelServiceSession,
   finishServiceSession,
+  getMySummary,
   getMyTodaySessions,
   listServiceSessions,
   startServiceSession,
@@ -53,6 +54,17 @@ export async function serviceSessionsRoutes(app: FastifyInstance) {
     async (request) => {
       const sessions = await getMyTodaySessions(request.user.tenantId, request.user.sub);
       return { data: sessions };
+    },
+  );
+
+  app.get(
+    "/service-sessions/mine/summary",
+    { preHandler: [authGuard, roleGuard(["BARBER"])] },
+    async (request) => {
+      const query = request.query as { period?: string };
+      const period = query.period === "month" ? "month" : "week";
+      const summary = await getMySummary(request.user.tenantId, request.user.sub, period);
+      return { data: summary };
     },
   );
 
