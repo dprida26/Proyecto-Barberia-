@@ -30,6 +30,7 @@ export type CreateBarberInput = z.infer<typeof createBarberSchema>;
 export const updateBarberSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
   isAvailable: z.boolean().optional(),
+  email: z.string().email().optional(),
 });
 export type UpdateBarberInput = z.infer<typeof updateBarberSchema>;
 

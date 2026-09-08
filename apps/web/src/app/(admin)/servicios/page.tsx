@@ -1,90 +1,152 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { useAllServices, useCreateService, useUpdateService } from "@/features/services/use-services-admin";
+import { useState } from "react";
+import { MoreHorizontal, Plus, Scissors } from "lucide-react";
+import type { ServiceCatalogItem } from "@barberops/shared";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAllServices, useUpdateService } from "@/features/services/use-services-admin";
+import { ServiceFormDialog } from "@/features/services/ServiceFormDialog";
 
 export default function ServiciosPage() {
   const { data: services, isLoading } = useAllServices();
-  const createService = useCreateService();
   const updateService = useUpdateService();
 
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [duration, setDuration] = useState("30");
-  const [price, setPrice] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingService, setEditingService] = useState<ServiceCatalogItem | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ServiceCatalogItem | null>(null);
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault();
-    await createService.mutateAsync({
-      name,
-      category: category || undefined,
-      durationEstimateMin: Number(duration),
-      currentPrice: Number(price),
-      isActive: true,
-    });
-    setName("");
-    setCategory("");
-    setDuration("30");
-    setPrice("");
+  function openCreate() {
+    setEditingService(null);
+    setFormOpen(true);
   }
 
-  async function toggleActive(id: string, isActive: boolean) {
-    await updateService.mutateAsync({ id, input: { isActive: !isActive } });
+  function openEdit(service: ServiceCatalogItem) {
+    setEditingService(service);
+    setFormOpen(true);
+  }
+
+  async function handleToggle(service: ServiceCatalogItem) {
+    if (service.isActive) {
+      setConfirmTarget(service);
+      return;
+    }
+    await updateService.mutateAsync({ id: service.id, input: { isActive: true } });
+  }
+
+  async function confirmDeactivate() {
+    if (!confirmTarget) return;
+    await updateService.mutateAsync({ id: confirmTarget.id, input: { isActive: false } });
+    setConfirmTarget(null);
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Nuevo servicio</h2>
-        <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
-          <Input placeholder="Categoria" value={category} onChange={(e) => setCategory(e.target.value)} />
-          <Input
-            type="number"
-            placeholder="Duracion (min)"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            required
-          />
-          <Input
-            type="number"
-            placeholder="Precio"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-          <Button type="submit" disabled={createService.isPending} className="sm:col-span-2">
-            Crear servicio
-          </Button>
-        </form>
-      </Card>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Servicios</h1>
+          <p className="text-sm text-muted-foreground">Catalogo y precios de la barberia.</p>
+        </div>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          Nuevo servicio
+        </Button>
+      </div>
 
       <Card>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Catalogo</h2>
-        {isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-        <div className="flex flex-col divide-y divide-slate-100">
-          {services?.map((service) => (
-            <div key={service.id} className="flex items-center justify-between py-3">
-              <div>
-                <p className="font-medium text-slate-900">{service.name}</p>
-                <p className="text-sm text-slate-500">
-                  Gs. {Number(service.currentPrice).toLocaleString("es-PY")} · {service.durationEstimateMin} min
-                </p>
-              </div>
-              <Button
-                variant={service.isActive ? "secondary" : "primary"}
-                className="min-h-0 px-3 py-2 text-sm"
-                onClick={() => toggleActive(service.id, service.isActive)}
-              >
-                {service.isActive ? "Desactivar" : "Activar"}
-              </Button>
-            </div>
-          ))}
-        </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scissors className="h-4 w-4 text-primary" />
+            Catalogo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading && <p className="px-5 pb-5 text-sm text-muted-foreground">Cargando...</p>}
+          {!isLoading && services?.length === 0 && (
+            <p className="px-5 pb-5 text-sm text-muted-foreground">Aun no hay servicios cargados.</p>
+          )}
+          {!isLoading && services && services.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Duracion</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {services.map((service) => (
+                  <TableRow key={service.id}>
+                    <TableCell className="font-medium text-foreground">{service.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{service.category ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{service.durationEstimateMin} min</TableCell>
+                    <TableCell className="font-medium">
+                      Gs. {Number(service.currentPrice).toLocaleString("es-PY")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={service.isActive ? "success" : "default"}>
+                        {service.isActive ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(service)}>Editar</DropdownMenuItem>
+                          <DropdownMenuItem
+                            destructive={service.isActive}
+                            onClick={() => handleToggle(service)}
+                          >
+                            {service.isActive ? "Desactivar" : "Activar"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
+
+      <ServiceFormDialog open={formOpen} onOpenChange={setFormOpen} service={editingService} />
+
+      <AlertDialog open={Boolean(confirmTarget)} onOpenChange={(open) => !open && setConfirmTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desactivar servicio</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmTarget?.name} dejara de estar disponible para que los barberos lo seleccionen. El
+              historial de servicios ya realizados no se ve afectado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeactivate}>Desactivar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

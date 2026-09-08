@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { CreateBarberInput, UpdateBarberInput } from "@barberops/shared";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, ApiError } from "@/lib/api-client";
 
-interface BarberAdminItem {
+export interface BarberAdminItem {
   id: string;
   displayName: string;
   isAvailable: boolean;
@@ -11,6 +12,10 @@ interface BarberAdminItem {
 }
 
 const QUERY_KEY = ["barbers", "admin"];
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
+}
 
 export function useBarbersAdmin() {
   return useQuery({
@@ -25,7 +30,11 @@ export function useCreateBarber() {
   return useMutation({
     mutationFn: (input: CreateBarberInput) =>
       apiClient.post<{ data: BarberAdminItem }>("/api/v1/barbers", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success("Barbero creado");
+    },
+    onError: (error) => toast.error(errorMessage(error, "No se pudo crear el barbero")),
   });
 }
 
@@ -34,6 +43,10 @@ export function useUpdateBarber() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateBarberInput }) =>
       apiClient.patch<{ data: BarberAdminItem }>(`/api/v1/barbers/${id}`, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success("Barbero actualizado");
+    },
+    onError: (error) => toast.error(errorMessage(error, "No se pudo actualizar el barbero")),
   });
 }

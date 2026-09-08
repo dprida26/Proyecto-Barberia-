@@ -1,7 +1,7 @@
 import { prisma } from "../../database/client";
 import { hashPassword } from "../auth/auth.service";
 import { recordAudit } from "../audit/audit.service";
-import { NotFoundError } from "../../common/errors";
+import { ConflictError, NotFoundError } from "../../common/errors";
 import type { CreateBarberInput, UpdateBarberInput } from "@barberops/shared";
 
 export async function listBarbers(tenantId: string) {
@@ -49,12 +49,25 @@ export async function updateBarber(tenantId: string, barberId: string, input: Up
   const existing = await prisma.barber.findFirst({ where: { id: barberId, tenantId } });
   if (!existing) throw new NotFoundError("Barbero no encontrado");
 
-  const updated = await prisma.barber.update({
-    where: { id: barberId },
-    data: {
-      displayName: input.displayName ?? undefined,
-      isAvailable: input.isAvailable ?? undefined,
-    },
+  if (input.email) {
+    const emailTaken = await prisma.user.findFirst({
+      where: { tenantId, email: input.email, NOT: { id: existing.userId } },
+    });
+    if (emailTaken) throw new ConflictError("Ya existe un usuario con ese email");
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (input.email) {
+      await tx.user.update({ where: { id: existing.userId }, data: { email: input.email } });
+    }
+    return tx.barber.update({
+      where: { id: barberId },
+      data: {
+        displayName: input.displayName ?? undefined,
+        isAvailable: input.isAvailable ?? undefined,
+      },
+      include: { user: { select: { email: true, isActive: true } } },
+    });
   });
 
   await recordAudit({
