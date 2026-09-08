@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -15,4 +16,5 @@ export const env = {
   jwtRefreshSecret: required("JWT_REFRESH_SECRET"),
   accessTokenTtl: "15m",
   refreshTokenTtl: "7d",
+  uploadsDir: process.env.UPLOADS_DIR ?? path.join(process.cwd(), "uploads"),
 };

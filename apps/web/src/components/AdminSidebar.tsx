@@ -3,16 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, LayoutDashboard, LogOut, Menu, Scissors, Users, X } from "lucide-react";
+import { BarChart3, LayoutDashboard, LogOut, Menu, Scissors, Settings, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session.store";
 import { Button } from "@/components/ui/button";
+import { BrandHeader } from "@/components/BrandHeader";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/servicios", label: "Servicios", icon: Scissors },
   { href: "/barberos", label: "Barberos", icon: Users },
   { href: "/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
 function SidebarLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -53,7 +55,7 @@ export function AdminSidebar() {
     <>
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
-        <span className="text-lg font-bold text-primary">BarberOps</span>
+        <BrandHeader />
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
           <Menu className="h-5 w-5" />
         </Button>
@@ -65,7 +67,7 @@ export function AdminSidebar() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col gap-6 bg-card py-5 shadow-lg">
             <div className="flex items-center justify-between px-4">
-              <span className="text-lg font-bold text-primary">BarberOps</span>
+              <BrandHeader />
               <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Cerrar menu">
                 <X className="h-5 w-5" />
               </Button>
@@ -87,7 +89,7 @@ export function AdminSidebar() {
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 flex-col gap-6 border-r border-border bg-card py-6 md:flex">
         <div className="px-5">
-          <span className="text-xl font-bold text-primary">BarberOps</span>
+          <BrandHeader />
         </div>
         <SidebarLinks />
         <div className="border-t border-border px-3 pt-4">

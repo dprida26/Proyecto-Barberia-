@@ -19,7 +19,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const { accessToken } = useSessionStore.getState();
 
   const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type") && options.body) {
+  const isFormData = options.body instanceof FormData;
+  if (!headers.has("Content-Type") && options.body && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
   if (accessToken && !options.skipAuth) {
@@ -55,4 +56,5 @@ export const apiClient = {
     request<T>(path, { ...options, method: "POST", body: body ? JSON.stringify(body) : undefined }),
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+  postForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "POST", body: formData }),
 };

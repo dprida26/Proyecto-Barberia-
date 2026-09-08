@@ -37,14 +37,20 @@ enum AuditAction {
   BARBER_UPDATED
   BARBER_DEACTIVATED
   USER_LOGIN
+  TENANT_SETTINGS_UPDATED
+  TENANT_LOGO_UPDATED
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  logoUrl       String?
+  phone         String?
+  address       String?
+  businessHours String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   users           User[]
   services        ServiceCatalog[]

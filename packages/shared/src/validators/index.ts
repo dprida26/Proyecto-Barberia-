@@ -46,6 +46,14 @@ export const cancelServiceSessionSchema = z.object({
 });
 export type CancelServiceSessionInput = z.infer<typeof cancelServiceSessionSchema>;
 
+export const updateTenantSettingsSchema = z.object({
+  name: z.string().min(2).max(80).optional(),
+  phone: z.string().max(30).optional(),
+  address: z.string().max(200).optional(),
+  businessHours: z.string().max(300).optional(),
+});
+export type UpdateTenantSettingsInput = z.infer<typeof updateTenantSettingsSchema>;
+
 export const reportFilterSchema = z.object({
   from: z.string().datetime(),
   to: z.string().datetime(),

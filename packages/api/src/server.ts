@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Server as SocketIOServer } from "socket.io";
 import { buildApp } from "./app";
 import { env } from "./config/env";
@@ -5,6 +7,8 @@ import { registerDashboardNamespace } from "./websockets/dashboard.namespace";
 import { setIoInstance } from "./websockets/io";
 
 async function main() {
+  await fs.mkdir(path.join(env.uploadsDir, "logos"), { recursive: true });
+
   const app = buildApp();
 
   await app.ready();

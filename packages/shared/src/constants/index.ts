@@ -18,6 +18,8 @@ export const AUDIT_ACTIONS = [
   "BARBER_UPDATED",
   "BARBER_DEACTIVATED",
   "USER_LOGIN",
+  "TENANT_SETTINGS_UPDATED",
+  "TENANT_LOGO_UPDATED",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

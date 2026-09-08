@@ -33,6 +33,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
     ports:
       - "3011:3001"
+    volumes:
+      - barberops_uploads:/repo/packages/api/uploads
 
   web:
     build:
@@ -48,3 +50,4 @@ services:
 
 volumes:
   barberops_postgres_data:
+  barberops_uploads:

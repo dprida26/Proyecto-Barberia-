@@ -4,6 +4,16 @@ import type {
   ServiceSessionStatus,
 } from "../constants";
 
+export interface TenantSettings {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  phone: string | null;
+  address: string | null;
+  businessHours: string | null;
+}
+
 export interface AuthUser {
   id: string;
   tenantId: string;
