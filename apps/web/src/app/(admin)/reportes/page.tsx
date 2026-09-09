@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { BarChart3, Clock, Download, Receipt, Ticket } from "lucide-react";
+import { BarChart3, ChevronDown, Clock, Download, Receipt, Ticket } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import type { ReportPeriod } from "@barberops/shared";
 import { REPORT_PERIODS } from "@barberops/shared";
@@ -15,6 +15,11 @@ import { useExportCsvUrl, useReportSummary } from "@/features/reports/use-report
 import { DateRangePicker } from "@/features/reports/DateRangePicker";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
 import { apiBaseUrl } from "@/lib/env";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+function formatGs(value: string | number) {
+  return `Gs. ${Number(value).toLocaleString("es-PY")}`;
+}
 
 const CHART_COLOR = "hsl(221 83% 53%)";
 
@@ -122,66 +127,99 @@ export default function ReportesPage() {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Servicios por tipo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.byService}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-                    <XAxis dataKey="serviceName" tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
+            <Collapsible defaultOpen={false}>
+              <CollapsibleTrigger className="w-full [&[data-state=open]_.chevron]:rotate-180">
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <CardTitle>Servicios por tipo</CardTitle>
+                  <ChevronDown className="chevron h-4 w-4 text-muted-foreground transition-transform" />
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.byService}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                        <XAxis dataKey="serviceName" tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Produccion por barbero</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-border p-0 pb-2">
-              {data.byBarber.map((barber) => (
-                <div key={barber.barberId} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <p className="font-medium text-foreground">{barber.barberName}</p>
-                    <p className="text-sm text-muted-foreground">{barber.servicesCount} servicios</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground">
-                      Gs. {Number(barber.revenue).toLocaleString("es-PY")}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Barbero Gs. {Number(barber.barberEarning).toLocaleString("es-PY")} · Barberia Gs.{" "}
-                      {Number(barber.businessEarning).toLocaleString("es-PY")}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div>
+            <h2 className="mb-3 text-lg font-semibold tracking-tight">Produccion por barbero</h2>
+            <div className="flex flex-col gap-3">
+              {data.byBarber.length === 0 ? (
+                <Card>
+                  <CardContent className="p-5 text-sm text-muted-foreground">
+                    No hay servicios completados en este periodo.
+                  </CardContent>
+                </Card>
+              ) : (
+                data.byBarber.map((barber) => (
+                  <Card key={barber.barberId}>
+                    <Collapsible defaultOpen={false}>
+                      <CollapsibleTrigger className="w-full [&[data-state=open]_.chevron]:rotate-180">
+                        <CardHeader className="flex-row items-center justify-between space-y-0">
+                          <div className="text-left">
+                            <CardTitle className="text-base">{barber.barberName}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{barber.servicesCount} servicios</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">{formatGs(barber.revenue)}</span>
+                            <ChevronDown className="chevron h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="grid grid-cols-2 gap-2 pt-0">
+                          <div className="rounded-lg bg-success/10 px-3 py-2">
+                            <p className="text-xs text-muted-foreground">Para el barbero</p>
+                            <p className="font-semibold text-success">{formatGs(barber.barberEarning)}</p>
+                          </div>
+                          <div className="rounded-lg bg-muted/50 px-3 py-2">
+                            <p className="text-xs text-muted-foreground">Para la barberia</p>
+                            <p className="font-semibold text-foreground">{formatGs(barber.businessEarning)}</p>
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Horarios de mayor actividad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.byHour}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-                    <XAxis dataKey="hour" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <Tooltip labelFormatter={(h) => `${h}:00`} />
-                    <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
+            <Collapsible defaultOpen={false}>
+              <CollapsibleTrigger className="w-full [&[data-state=open]_.chevron]:rotate-180">
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <CardTitle>Horarios de mayor actividad</CardTitle>
+                  <ChevronDown className="chevron h-4 w-4 text-muted-foreground transition-transform" />
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.byHour}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                        <XAxis dataKey="hour" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip labelFormatter={(h) => `${h}:00`} />
+                        <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         </>
       )}
