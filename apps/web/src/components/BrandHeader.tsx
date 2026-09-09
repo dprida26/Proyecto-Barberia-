@@ -1,7 +1,7 @@
 "use client";
 
 import { Scissors } from "lucide-react";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
 
 export function BrandHeader() {
@@ -12,7 +12,7 @@ export function BrandHeader() {
       {tenant?.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`${apiBaseUrl}${tenant.logoUrl}`}
+          src={resolveLogoUrl(tenant.logoUrl)!}
           alt={tenant.name}
           className="h-8 w-8 shrink-0 rounded-lg object-cover"
         />

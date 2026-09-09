@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 import { useTenantSettings, useUpdateTenantSettings, useUploadLogo } from "@/features/tenant-settings/use-tenant-settings";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -78,7 +78,7 @@ export default function ConfiguracionPage() {
             {tenant?.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={`${apiBaseUrl}${tenant.logoUrl}`}
+                src={resolveLogoUrl(tenant.logoUrl)!}
                 alt="Logo del negocio"
                 className="h-full w-full object-cover"
               />

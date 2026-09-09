@@ -1,9 +1,7 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { prisma } from "../../database/client";
 import { recordAudit } from "../audit/audit.service";
 import { NotFoundError } from "../../common/errors";
-import { env } from "../../config/env";
+import { deleteLogo } from "./storage";
 import type { UpdateTenantSettingsInput } from "@barberops/shared";
 
 export async function getTenantSettings(tenantId: string) {
@@ -48,11 +46,9 @@ export async function updateTenantSettings(
   return updated;
 }
 
-export async function updateTenantLogo(tenantId: string, fileName: string, actingUserId: string) {
+export async function updateTenantLogo(tenantId: string, logoUrl: string, actingUserId: string) {
   const existing = await prisma.tenant.findUnique({ where: { id: tenantId } });
   if (!existing) throw new NotFoundError("Negocio no encontrado");
-
-  const logoUrl = `/uploads/logos/${fileName}`;
 
   const updated = await prisma.tenant.update({
     where: { id: tenantId },
@@ -60,8 +56,7 @@ export async function updateTenantLogo(tenantId: string, fileName: string, actin
   });
 
   if (existing.logoUrl && existing.logoUrl !== logoUrl) {
-    const previousPath = path.join(env.uploadsDir, existing.logoUrl.replace(/^\/uploads\//, ""));
-    await fs.unlink(previousPath).catch(() => undefined);
+    await deleteLogo(existing.logoUrl);
   }
 
   await recordAudit({

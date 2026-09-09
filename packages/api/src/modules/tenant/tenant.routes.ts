@@ -1,11 +1,9 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import crypto from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { updateTenantSettingsSchema } from "@barberops/shared";
 import { authGuard, roleGuard } from "../../common/guards";
 import { ValidationError } from "../../common/errors";
-import { env } from "../../config/env";
+import { uploadLogo } from "./storage";
 import { getPublicTenantBranding, getTenantSettings, updateTenantLogo, updateTenantSettings } from "./tenant.service";
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
@@ -47,14 +45,10 @@ export async function tenantRoutes(app: FastifyInstance) {
         throw new ValidationError("Formato de imagen no soportado. Usa PNG, JPG o WEBP");
       }
 
-      const logosDir = path.join(env.uploadsDir, "logos");
-      await fs.mkdir(logosDir, { recursive: true });
-
       const fileName = `${crypto.randomUUID()}${extension}`;
-      const filePath = path.join(logosDir, fileName);
-      await fs.writeFile(filePath, await file.toBuffer());
+      const logoUrl = await uploadLogo(fileName, await file.toBuffer(), file.mimetype);
 
-      const tenant = await updateTenantLogo(request.user.tenantId, fileName, request.user.sub);
+      const tenant = await updateTenantLogo(request.user.tenantId, logoUrl, request.user.sub);
       return { data: tenant };
     },
   );

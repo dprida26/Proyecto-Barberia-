@@ -25,7 +25,7 @@ import {
 } from "@/features/barbers/use-barbers-admin";
 import { BarberFormDialog } from "@/features/barbers/BarberFormDialog";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 
 export default function BarberosPage() {
   const { data: barbers, isLoading } = useBarbersAdmin();
@@ -75,7 +75,7 @@ export default function BarberosPage() {
           {tenant?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${apiBaseUrl}${tenant.logoUrl}`}
+              src={resolveLogoUrl(tenant.logoUrl)!}
               alt={tenant.name}
               className="h-10 w-10 shrink-0 rounded-lg object-cover"
             />

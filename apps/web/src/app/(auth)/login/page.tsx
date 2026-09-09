@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLogin } from "@/features/auth/use-login";
 import { useTenantBranding } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 import { ApiError } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -42,7 +42,7 @@ export default function LoginPage() {
           {branding?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${apiBaseUrl}${branding.logoUrl}`}
+              src={resolveLogoUrl(branding.logoUrl)!}
               alt={branding.name}
               className="mb-2 h-12 w-12 rounded-xl object-cover"
             />

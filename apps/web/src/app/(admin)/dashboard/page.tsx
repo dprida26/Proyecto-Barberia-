@@ -5,7 +5,7 @@ import { useDashboardLive } from "@/features/dashboard/use-dashboard-live";
 import { BarberLiveCard } from "@/components/dashboard/BarberLiveCard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 
 export default function DashboardPage() {
   const { data, isLoading } = useDashboardLive();
@@ -21,7 +21,7 @@ export default function DashboardPage() {
         {tenant?.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={`${apiBaseUrl}${tenant.logoUrl}`}
+            src={resolveLogoUrl(tenant.logoUrl)!}
             alt={tenant.name}
             className="h-10 w-10 shrink-0 rounded-lg object-cover"
           />

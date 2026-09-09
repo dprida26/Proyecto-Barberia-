@@ -21,7 +21,7 @@ import {
 import { useAllServices, useUpdateService } from "@/features/services/use-services-admin";
 import { ServiceFormDialog } from "@/features/services/ServiceFormDialog";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 
 export default function ServiciosPage() {
   const { data: services, isLoading } = useAllServices();
@@ -63,7 +63,7 @@ export default function ServiciosPage() {
           {tenant?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${apiBaseUrl}${tenant.logoUrl}`}
+              src={resolveLogoUrl(tenant.logoUrl)!}
               alt={tenant.name}
               className="h-10 w-10 shrink-0 rounded-lg object-cover"
             />

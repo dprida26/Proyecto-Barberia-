@@ -17,4 +17,15 @@ export const env = {
   accessTokenTtl: "15m",
   refreshTokenTtl: "7d",
   uploadsDir: process.env.UPLOADS_DIR ?? path.join(process.cwd(), "uploads"),
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    bucket: process.env.R2_BUCKET,
+    publicUrl: process.env.R2_PUBLIC_URL, // ej: https://logos.tu-dominio.com o el dominio publico del bucket
+  },
 };
+
+export const r2Enabled = Boolean(
+  env.r2.accountId && env.r2.accessKeyId && env.r2.secretAccessKey && env.r2.bucket && env.r2.publicUrl,
+);

@@ -13,7 +13,7 @@ import { PERIOD_LABELS, resolvePeriod } from "@/features/reports/period";
 import { useExportCsvUrl, useReportSummary } from "@/features/reports/use-report-summary";
 import { DateRangePicker } from "@/features/reports/DateRangePicker";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 function formatGs(value: string | number) {
@@ -54,7 +54,7 @@ export default function ReportesPage() {
           {tenant?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${apiBaseUrl}${tenant.logoUrl}`}
+              src={resolveLogoUrl(tenant.logoUrl)!}
               alt={tenant.name}
               className="h-10 w-10 shrink-0 rounded-lg object-cover"
             />

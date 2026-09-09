@@ -5,7 +5,7 @@ import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useTenantBranding } from "@/features/tenant-settings/use-tenant-settings";
-import { apiBaseUrl } from "@/lib/env";
+import { resolveLogoUrl } from "@/lib/env";
 
 export default function NotFound() {
   const { data: branding } = useTenantBranding();
@@ -17,7 +17,7 @@ export default function NotFound() {
           {branding?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${apiBaseUrl}${branding.logoUrl}`}
+              src={resolveLogoUrl(branding.logoUrl)!}
               alt={branding.name}
               className="mb-2 h-12 w-12 rounded-xl object-cover"
             />
