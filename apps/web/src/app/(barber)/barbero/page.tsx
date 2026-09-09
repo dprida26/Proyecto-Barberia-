@@ -18,7 +18,6 @@ import {
   useMyTodaySessions,
   useStartService,
 } from "@/features/barber-session/use-barber-session";
-import { ServiceSummarySection } from "@/features/barber-session/ServiceSummarySection";
 import { EarningsSummarySection } from "@/features/barber-session/EarningsSummarySection";
 import { useSessionStore } from "@/stores/session.store";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -49,40 +48,17 @@ function BarberScreen() {
     [todaySessions],
   );
 
-  const todayByService = useMemo(() => {
-    const map = new Map<string, { serviceId: string; label: string; count: number }>();
-    for (const session of completedToday) {
-      const entry = map.get(session.serviceId) ?? {
-        serviceId: session.serviceId,
+  const todayEarningsBySession = useMemo(
+    () =>
+      completedToday.map((session) => ({
+        sessionId: session.id,
         label: session.serviceName,
-        count: 0,
-      };
-      entry.count += 1;
-      map.set(session.serviceId, entry);
-    }
-    return Array.from(map.values()).sort((a, b) => b.count - a.count);
-  }, [completedToday]);
-
-  const todayEarningsByService = useMemo(() => {
-    const map = new Map<
-      string,
-      { serviceId: string; label: string; count: number; barberEarning: number; businessEarning: number }
-    >();
-    for (const session of completedToday) {
-      const entry = map.get(session.serviceId) ?? {
-        serviceId: session.serviceId,
-        label: session.serviceName,
-        count: 0,
-        barberEarning: 0,
-        businessEarning: 0,
-      };
-      entry.count += 1;
-      entry.barberEarning += Number(session.barberEarning ?? 0);
-      entry.businessEarning += Number(session.businessEarning ?? 0);
-      map.set(session.serviceId, entry);
-    }
-    return Array.from(map.values()).sort((a, b) => b.barberEarning - a.barberEarning);
-  }, [completedToday]);
+        time: new Date(session.startedAt).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" }),
+        barberEarning: Number(session.barberEarning ?? 0),
+        businessEarning: Number(session.businessEarning ?? 0),
+      })),
+    [completedToday],
+  );
 
   const todayTotals = useMemo(
     () =>
@@ -210,10 +186,10 @@ function BarberScreen() {
         title="Hoy"
         totalBarberEarning={todayTotals.barberEarning.toFixed(2)}
         totalBusinessEarning={todayTotals.businessEarning.toFixed(2)}
-        items={todayEarningsByService.map((item) => ({
-          key: item.serviceId,
+        items={todayEarningsBySession.map((item) => ({
+          key: item.sessionId,
           label: item.label,
-          count: item.count,
+          time: item.time,
           barberEarning: item.barberEarning.toFixed(2),
           businessEarning: item.businessEarning.toFixed(2),
         }))}
@@ -248,43 +224,6 @@ function BarberScreen() {
             count: item.count,
             barberEarning: item.barberEarning,
             businessEarning: item.businessEarning,
-          })) ?? []
-        }
-        emptyLabel="Aun no completaste servicios este mes."
-      />
-
-      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Servicios realizados
-      </h2>
-
-      <ServiceSummarySection
-        title="Hoy"
-        totalCount={completedToday.length}
-        items={todayByService.map((item) => ({ key: item.serviceId, label: item.label, count: item.count }))}
-        emptyLabel="Aun no completaste servicios hoy."
-      />
-
-      <ServiceSummarySection
-        title="Esta semana"
-        totalCount={weekSummary?.totalCount ?? 0}
-        items={
-          weekSummary?.byService.map((item) => ({
-            key: item.serviceId,
-            label: item.serviceName,
-            count: item.count,
-          })) ?? []
-        }
-        emptyLabel="Aun no completaste servicios esta semana."
-      />
-
-      <ServiceSummarySection
-        title="Este mes"
-        totalCount={monthSummary?.totalCount ?? 0}
-        items={
-          monthSummary?.byService.map((item) => ({
-            key: item.serviceId,
-            label: item.serviceName,
-            count: item.count,
           })) ?? []
         }
         emptyLabel="Aun no completaste servicios este mes."

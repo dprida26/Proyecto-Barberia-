@@ -18,7 +18,8 @@ interface EarningsSummarySectionProps {
   items: {
     key: string;
     label: string;
-    count: number;
+    count?: number;
+    time?: string;
     barberEarning: string;
     businessEarning: string;
   }[];
@@ -61,7 +62,10 @@ export function EarningsSummarySection({
                 {items.map((item) => (
                   <li key={item.key} className="flex items-center justify-between py-2.5 text-sm">
                     <span className="text-foreground">
-                      {item.label} <span className="text-muted-foreground">x{item.count}</span>
+                      {item.label}{" "}
+                      <span className="text-muted-foreground">
+                        {item.time ? item.time : item.count !== undefined ? `x${item.count}` : null}
+                      </span>
                     </span>
                     <span className="font-medium text-success">{formatGs(item.barberEarning)}</span>
                   </li>
