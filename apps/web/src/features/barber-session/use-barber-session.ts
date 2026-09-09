@@ -80,7 +80,7 @@ export function useMySummary(period: "week" | "month") {
 export function useStartService() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { serviceId: string; clientNameFree?: string; observations?: string }) =>
+    mutationFn: (input: { serviceIds: string[]; clientNameFree?: string; paymentMethod: "CASH" | "TRANSFER" }) =>
       apiClient.post<ApiItemResponse<ServiceSessionRecord>>("/api/v1/service-sessions/start", input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["service-sessions"] });

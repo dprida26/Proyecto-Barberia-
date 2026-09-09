@@ -13,10 +13,14 @@ export async function startServiceSession(
   const barber = await prisma.barber.findFirst({ where: { tenantId, userId: barberUserId } });
   if (!barber) throw new NotFoundError("Barbero no encontrado");
 
-  const service = await prisma.serviceCatalog.findFirst({
-    where: { id: input.serviceId, tenantId, isActive: true },
+  const services = await prisma.serviceCatalog.findMany({
+    where: { id: { in: input.serviceIds }, tenantId, isActive: true },
   });
-  if (!service) throw new NotFoundError("Servicio no encontrado o inactivo");
+  if (services.length !== input.serviceIds.length) {
+    throw new NotFoundError("Uno o mas servicios no fueron encontrados o estan inactivos");
+  }
+
+  const totalPrice = services.reduce((sum, s) => sum + Number(s.currentPrice), 0);
 
   const session = await prisma.$transaction(async (tx) => {
     const activeSession = await tx.serviceSession.findFirst({
@@ -30,11 +34,13 @@ export async function startServiceSession(
       data: {
         tenantId,
         barberId: barber.id,
-        serviceId: service.id,
         clientNameFree: input.clientNameFree,
-        observations: input.observations,
-        priceAtStart: service.currentPrice,
+        paymentMethod: input.paymentMethod,
+        totalPrice,
         status: "IN_SERVICE",
+        items: {
+          create: services.map((s) => ({ serviceId: s.id, priceAtStart: s.currentPrice })),
+        },
       },
     });
 
@@ -57,8 +63,7 @@ export async function startServiceSession(
   emitToTenant(tenantId, SOCKET_EVENTS.SERVICE_STARTED, {
     sessionId: session.id,
     barberId: barber.id,
-    serviceId: service.id,
-    serviceName: service.name,
+    services: services.map((s) => ({ serviceId: s.id, serviceName: s.name })),
     startedAt: session.startedAt,
     clientNameFree: session.clientNameFree,
   });
@@ -104,7 +109,7 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
   });
 
   const { barberEarning, businessEarning } = computeEarnings(
-    Number(session.priceAtStart),
+    Number(session.totalPrice),
     Number(commissionPercent),
   );
 
@@ -168,17 +173,21 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
 
   const sessions = await prisma.serviceSession.findMany({
     where: { barberId: barber.id, tenantId, startedAt: { gte: startOfDay } },
-    include: { service: { select: { name: true } } },
+    include: { items: { include: { service: { select: { name: true } } } } },
     orderBy: { startedAt: "desc" },
   });
 
-  return sessions.map(({ service, ...session }) => {
+  return sessions.map(({ items, ...session }) => {
     const earnings = session.commissionPercentAtCompletion
-      ? computeEarnings(Number(session.priceAtStart), Number(session.commissionPercentAtCompletion))
+      ? computeEarnings(Number(session.totalPrice), Number(session.commissionPercentAtCompletion))
       : null;
     return {
       ...session,
-      serviceName: service.name,
+      services: items.map((item) => ({
+        serviceId: item.serviceId,
+        serviceName: item.service.name,
+        priceAtStart: item.priceAtStart.toFixed(2),
+      })),
       barberEarning: earnings ? earnings.barberEarning.toFixed(2) : null,
       businessEarning: earnings ? earnings.businessEarning.toFixed(2) : null,
     };
@@ -201,7 +210,7 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
 
   const sessions = await prisma.serviceSession.findMany({
     where: { barberId: barber.id, tenantId, status: "COMPLETED", startedAt: { gte: from } },
-    include: { service: { select: { name: true } } },
+    include: { items: { include: { service: { select: { name: true } } } } },
   });
 
   const byServiceMap = new Map<
@@ -213,27 +222,30 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
   let totalBusinessEarning = 0;
 
   for (const session of sessions) {
-    const price = Number(session.priceAtStart);
-    const { barberEarning, businessEarning } = computeEarnings(
-      price,
-      Number(session.commissionPercentAtCompletion ?? 0),
-    );
-    totalRevenue += price;
+    const totalPrice = Number(session.totalPrice);
+    const commissionPercent = Number(session.commissionPercentAtCompletion ?? 0);
+    const { barberEarning, businessEarning } = computeEarnings(totalPrice, commissionPercent);
+    totalRevenue += totalPrice;
     totalBarberEarning += barberEarning;
     totalBusinessEarning += businessEarning;
 
-    const entry = byServiceMap.get(session.serviceId) ?? {
-      serviceName: session.service.name,
-      count: 0,
-      revenue: 0,
-      barberEarning: 0,
-      businessEarning: 0,
-    };
-    entry.count += 1;
-    entry.revenue += price;
-    entry.barberEarning += barberEarning;
-    entry.businessEarning += businessEarning;
-    byServiceMap.set(session.serviceId, entry);
+    for (const item of session.items) {
+      const itemPrice = Number(item.priceAtStart);
+      const itemEarnings = computeEarnings(itemPrice, commissionPercent);
+
+      const entry = byServiceMap.get(item.serviceId) ?? {
+        serviceName: item.service.name,
+        count: 0,
+        revenue: 0,
+        barberEarning: 0,
+        businessEarning: 0,
+      };
+      entry.count += 1;
+      entry.revenue += itemPrice;
+      entry.barberEarning += itemEarnings.barberEarning;
+      entry.businessEarning += itemEarnings.businessEarning;
+      byServiceMap.set(item.serviceId, entry);
+    }
   }
 
   const byService = Array.from(byServiceMap.entries())
@@ -267,12 +279,12 @@ export async function listServiceSessions(
         ? { startedAt: { gte: filters.from, lte: filters.to } }
         : {}),
       ...(filters.barberId ? { barberId: filters.barberId } : {}),
-      ...(filters.serviceId ? { serviceId: filters.serviceId } : {}),
+      ...(filters.serviceId ? { items: { some: { serviceId: filters.serviceId } } } : {}),
       ...(filters.status ? { status: filters.status as any } : {}),
     },
     include: {
       barber: { select: { displayName: true } },
-      service: { select: { name: true } },
+      items: { include: { service: { select: { name: true } } } },
     },
     orderBy: { startedAt: "desc" },
   });

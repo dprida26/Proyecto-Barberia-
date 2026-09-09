@@ -2,6 +2,7 @@ import type {
   UserRole,
   BarberStatus,
   ServiceSessionStatus,
+  PaymentMethod,
 } from "../constants";
 
 export interface TenantSettings {
@@ -43,10 +44,16 @@ export interface BarberSummary {
   activeSession: ActiveServiceSession | null;
 }
 
-export interface ActiveServiceSession {
-  id: string;
+export interface ServiceSessionItemRecord {
   serviceId: string;
   serviceName: string;
+  priceAtStart: string;
+}
+
+export interface ActiveServiceSession {
+  id: string;
+  services: ServiceSessionItemRecord[];
+  totalPrice: string;
   startedAt: string;
   clientNameFree: string | null;
 }
@@ -56,11 +63,10 @@ export interface ServiceSessionRecord {
   tenantId: string;
   barberId: string;
   barberName: string;
-  serviceId: string;
-  serviceName: string;
+  services: ServiceSessionItemRecord[];
+  totalPrice: string;
   clientNameFree: string | null;
-  observations: string | null;
-  priceAtStart: string;
+  paymentMethod: PaymentMethod;
   commissionPercentAtCompletion: string | null;
   barberEarning: string | null;
   businessEarning: string | null;

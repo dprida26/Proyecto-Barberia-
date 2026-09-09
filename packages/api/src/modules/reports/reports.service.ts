@@ -14,7 +14,7 @@ function baseWhere(tenantId: string, filters: ReportFilters) {
     status: "COMPLETED" as const,
     startedAt: { gte: filters.from, lte: filters.to },
     ...(filters.barberId ? { barberId: filters.barberId } : {}),
-    ...(filters.serviceId ? { serviceId: filters.serviceId } : {}),
+    ...(filters.serviceId ? { items: { some: { serviceId: filters.serviceId } } } : {}),
   };
 }
 
@@ -25,20 +25,19 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     prisma.serviceSession.aggregate({
       where,
       _count: { _all: true },
-      _sum: { priceAtStart: true },
+      _sum: { totalPrice: true },
       _avg: { durationSeconds: true },
     }),
     prisma.serviceSession.findMany({
       where,
       select: {
         barberId: true,
-        serviceId: true,
-        priceAtStart: true,
+        totalPrice: true,
         commissionPercentAtCompletion: true,
         durationSeconds: true,
         startedAt: true,
         barber: { select: { displayName: true } },
-        service: { select: { name: true } },
+        items: { include: { service: { select: { name: true } } } },
       },
     }),
   ]);
@@ -61,12 +60,10 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
   let totalBusinessEarning = 0;
 
   for (const session of sessions) {
-    const price = Number(session.priceAtStart);
+    const price = Number(session.totalPrice);
     const duration = session.durationSeconds ?? 0;
-    const { barberEarning, businessEarning } = computeEarnings(
-      price,
-      Number(session.commissionPercentAtCompletion ?? 0),
-    );
+    const commissionPercent = Number(session.commissionPercentAtCompletion ?? 0);
+    const { barberEarning, businessEarning } = computeEarnings(price, commissionPercent);
     totalBarberEarning += barberEarning;
     totalBusinessEarning += businessEarning;
 
@@ -85,14 +82,17 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     barberEntry.businessEarning += businessEarning;
     byBarberMap.set(session.barberId, barberEntry);
 
-    const serviceEntry = byServiceMap.get(session.serviceId) ?? {
-      serviceName: session.service.name,
-      servicesCount: 0,
-      revenue: 0,
-    };
-    serviceEntry.servicesCount += 1;
-    serviceEntry.revenue += price;
-    byServiceMap.set(session.serviceId, serviceEntry);
+    for (const item of session.items) {
+      const itemPrice = Number(item.priceAtStart);
+      const serviceEntry = byServiceMap.get(item.serviceId) ?? {
+        serviceName: item.service.name,
+        servicesCount: 0,
+        revenue: 0,
+      };
+      serviceEntry.servicesCount += 1;
+      serviceEntry.revenue += itemPrice;
+      byServiceMap.set(item.serviceId, serviceEntry);
+    }
 
     const hour = session.startedAt.getHours();
     byHourMap.set(hour, (byHourMap.get(hour) ?? 0) + 1);
@@ -124,7 +124,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
   const topBarberByRevenue = [...byBarber].sort((a, b) => Number(b.revenue) - Number(a.revenue))[0] ?? null;
 
   const servicesCount = totals._count._all;
-  const revenue = Number(totals._sum.priceAtStart ?? 0);
+  const revenue = Number(totals._sum.totalPrice ?? 0);
 
   return {
     range: { from: filters.from.toISOString(), to: filters.to.toISOString() },
@@ -150,7 +150,7 @@ export async function getReportRows(tenantId: string, filters: ReportFilters) {
     where: baseWhere(tenantId, filters),
     include: {
       barber: { select: { displayName: true } },
-      service: { select: { name: true } },
+      items: { include: { service: { select: { name: true } } } },
     },
     orderBy: { startedAt: "asc" },
   });

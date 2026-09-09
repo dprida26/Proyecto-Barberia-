@@ -14,7 +14,9 @@ export function BarberLiveCard({ barber }: { barber: BarberSummary }) {
       </div>
       {barber.activeSession ? (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">{barber.activeSession.serviceName}</span>
+          <span className="truncate text-muted-foreground">
+            {barber.activeSession.services.map((s) => s.serviceName).join(" + ")}
+          </span>
           <span className="font-mono text-base font-semibold tabular-nums text-foreground">{formatted}</span>
         </div>
       ) : (

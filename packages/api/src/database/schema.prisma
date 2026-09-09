@@ -26,6 +26,11 @@ enum ServiceSessionStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
 enum AuditAction {
   SERVICE_STARTED
   SERVICE_FINISHED
@@ -109,8 +114,8 @@ model ServiceCatalog {
   createdAt            DateTime @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime @updatedAt @db.Timestamptz(3)
 
-  tenant          Tenant            @relation(fields: [tenantId], references: [id])
-  serviceSessions ServiceSession[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  serviceSessionItems ServiceSessionItem[]
 
   @@index([tenantId])
   @@map("service_catalog")
@@ -120,10 +125,9 @@ model ServiceSession {
   id                            String               @id @default(uuid())
   tenantId                      String
   barberId                      String
-  serviceId                     String
   clientNameFree                String?
-  observations                  String?
-  priceAtStart                  Decimal              @db.Decimal(10, 2)
+  paymentMethod                 PaymentMethod        @default(CASH)
+  totalPrice                    Decimal              @db.Decimal(10, 2)
   commissionPercentAtCompletion Decimal?             @db.Decimal(5, 2)
   status                        ServiceSessionStatus @default(IN_SERVICE)
   startedAt                     DateTime             @default(now()) @db.Timestamptz(3)
@@ -132,15 +136,29 @@ model ServiceSession {
   cancelReason                  String?
   createdAt                     DateTime             @default(now()) @db.Timestamptz(3)
 
-  tenant  Tenant         @relation(fields: [tenantId], references: [id])
-  barber  Barber         @relation(fields: [barberId], references: [id])
-  service ServiceCatalog @relation(fields: [serviceId], references: [id])
+  tenant Tenant               @relation(fields: [tenantId], references: [id])
+  barber Barber               @relation(fields: [barberId], references: [id])
+  items  ServiceSessionItem[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, startedAt])
   @@index([barberId, status])
   @@map("service_sessions")
+}
+
+model ServiceSessionItem {
+  id           String   @id @default(uuid())
+  sessionId    String
+  serviceId    String
+  priceAtStart Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  session ServiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  service ServiceCatalog @relation(fields: [serviceId], references: [id])
+
+  @@index([sessionId])
+  @@map("service_session_items")
 }
 
 model AuditLog {

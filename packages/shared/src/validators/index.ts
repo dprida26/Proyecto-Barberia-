@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PAYMENT_METHODS } from "../constants";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -35,11 +36,16 @@ export const updateBarberSchema = z.object({
 });
 export type UpdateBarberInput = z.infer<typeof updateBarberSchema>;
 
-export const startServiceSessionSchema = z.object({
-  serviceId: z.string().uuid(),
-  clientNameFree: z.string().max(120).optional(),
-  observations: z.string().max(500).optional(),
-});
+export const startServiceSessionSchema = z
+  .object({
+    serviceIds: z.array(z.string().uuid()).min(1),
+    clientNameFree: z.string().max(120).optional(),
+    paymentMethod: z.enum(PAYMENT_METHODS).default("CASH"),
+  })
+  .refine((data) => data.paymentMethod !== "TRANSFER" || Boolean(data.clientNameFree?.trim()), {
+    message: "El nombre del cliente es obligatorio para pagos por transferencia",
+    path: ["clientNameFree"],
+  });
 export type StartServiceSessionInput = z.infer<typeof startServiceSessionSchema>;
 
 export const cancelServiceSessionSchema = z.object({

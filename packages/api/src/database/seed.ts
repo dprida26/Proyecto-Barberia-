@@ -9,6 +9,11 @@ function pick<T>(items: T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
+function pickDistinct<T>(items: T[], count: number): T[] {
+  const shuffled = [...items].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, items.length));
+}
+
 async function main() {
   const tenant = await prisma.tenant.upsert({
     where: { slug: "barberia-demo" },
@@ -93,21 +98,11 @@ async function main() {
   if (existingSessionsCount === 0) {
     const clientNames = ["Diego", "Marcos", "Lucas", "Fabian", "Ruben", "Nestor", "Andres", "Ariel", null, null];
     const workHours = [8, 9, 10, 11, 13, 14, 15, 16, 17, 18];
-    const sessionsData: Array<{
-      tenantId: string;
-      barberId: string;
-      serviceId: string;
-      clientNameFree: string | null;
-      priceAtStart: number;
-      commissionPercentAtCompletion: number;
-      status: "COMPLETED";
-      startedAt: Date;
-      endedAt: Date;
-      durationSeconds: number;
-    }> = [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    let sessionsCreated = 0;
 
     for (let daysAgo = 13; daysAgo >= 0; daysAgo--) {
       const day = new Date(today);
@@ -117,7 +112,7 @@ async function main() {
 
       for (let i = 0; i < sessionsThisDay; i++) {
         const barber = pick(barbers);
-        const service = pick(services);
+        const chosenServices = pickDistinct(services, randomInt(1, 3));
         const hour = pick(workHours);
         const minute = randomInt(0, 59);
 
@@ -127,26 +122,32 @@ async function main() {
         // Evitar sesiones "de hoy" en horarios futuros respecto al momento del seed.
         if (daysAgo === 0 && startedAt > new Date()) continue;
 
-        const durationSeconds = service.durationEstimateMin * 60 + randomInt(-120, 300);
+        const totalPrice = chosenServices.reduce((sum, s) => sum + s.currentPrice, 0);
+        const totalDurationMin = chosenServices.reduce((sum, s) => sum + s.durationEstimateMin, 0);
+        const durationSeconds = totalDurationMin * 60 + randomInt(-120, 300);
         const endedAt = new Date(startedAt.getTime() + durationSeconds * 1000);
 
-        sessionsData.push({
-          tenantId: tenant.id,
-          barberId: barber.id,
-          serviceId: service.id,
-          clientNameFree: pick(clientNames),
-          priceAtStart: service.currentPrice,
-          commissionPercentAtCompletion: barber.commissionPercent,
-          status: "COMPLETED",
-          startedAt,
-          endedAt,
-          durationSeconds,
+        await prisma.serviceSession.create({
+          data: {
+            tenantId: tenant.id,
+            barberId: barber.id,
+            clientNameFree: pick(clientNames),
+            totalPrice,
+            commissionPercentAtCompletion: barber.commissionPercent,
+            status: "COMPLETED",
+            startedAt,
+            endedAt,
+            durationSeconds,
+            items: {
+              create: chosenServices.map((s) => ({ serviceId: s.id, priceAtStart: s.currentPrice })),
+            },
+          },
         });
+        sessionsCreated += 1;
       }
     }
 
-    await prisma.serviceSession.createMany({ data: sessionsData });
-    console.log(`Historial de demo generado: ${sessionsData.length} servicios completados.`);
+    console.log(`Historial de demo generado: ${sessionsCreated} servicios completados.`);
   }
 
   console.log("Seed completado. Tenant:", tenant.slug);

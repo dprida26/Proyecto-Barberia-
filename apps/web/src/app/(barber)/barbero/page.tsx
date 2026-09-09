@@ -47,10 +47,27 @@ function BarberScreen() {
   const finishService = useFinishService();
   const cancelService = useCancelService();
 
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [clientName, setClientName] = useState("");
-  const [observations, setObservations] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TRANSFER">("CASH");
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+
+  const clientNameRequired = paymentMethod === "TRANSFER";
+  const clientNameMissing = clientNameRequired && !clientName.trim();
+
+  function toggleService(serviceId: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId],
+    );
+  }
+
+  const selectedTotalPrice = useMemo(
+    () =>
+      (services ?? [])
+        .filter((s) => selectedServiceIds.includes(s.id))
+        .reduce((sum, s) => sum + Number(s.currentPrice), 0),
+    [services, selectedServiceIds],
+  );
 
   const activeSession = useMemo(
     () => todaySessions?.find((s) => s.status === "IN_SERVICE") ?? null,
@@ -66,7 +83,7 @@ function BarberScreen() {
     () =>
       completedToday.map((session) => ({
         sessionId: session.id,
-        label: session.serviceName,
+        label: session.services.map((s) => s.serviceName).join(" + "),
         time: new Date(session.startedAt).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" }),
         barberEarning: Number(session.barberEarning ?? 0),
         businessEarning: Number(session.businessEarning ?? 0),
@@ -89,15 +106,15 @@ function BarberScreen() {
   const { formatted: elapsed } = useElapsedTime(activeSession?.startedAt ?? null);
 
   async function handleStart() {
-    if (!selectedServiceId) return;
+    if (selectedServiceIds.length === 0 || clientNameMissing) return;
     await startService.mutateAsync({
-      serviceId: selectedServiceId,
+      serviceIds: selectedServiceIds,
       clientNameFree: clientName || undefined,
-      observations: observations || undefined,
+      paymentMethod,
     });
-    setSelectedServiceId(null);
+    setSelectedServiceIds([]);
     setClientName("");
-    setObservations("");
+    setPaymentMethod("CASH");
   }
 
   async function handleFinish() {
@@ -140,10 +157,17 @@ function BarberScreen() {
         <Card className="border-success/30 bg-success/5">
           <CardContent className="flex flex-col items-center gap-3 py-8">
             <Badge variant="success">Servicio en curso</Badge>
-            <p className="text-lg font-semibold text-foreground">
-              {services?.find((s) => s.id === activeSession.serviceId)?.name ?? "Servicio"}
-            </p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {activeSession.services.map((s) => (
+                <Badge key={s.serviceId} variant="primary">
+                  {s.serviceName}
+                </Badge>
+              ))}
+            </div>
             <p className="font-mono text-5xl font-bold tabular-nums text-success">{elapsed}</p>
+            <p className="text-sm text-muted-foreground">
+              Total: Gs. {Number(activeSession.totalPrice).toLocaleString("es-PY")}
+            </p>
             <div className="flex w-full gap-3 pt-2">
               <Button variant="destructive" onClick={() => setCancelConfirmOpen(true)} className="flex-1">
                 Cancelar
@@ -167,35 +191,81 @@ function BarberScreen() {
             {loadingServices && <p className="text-sm text-muted-foreground">Cargando servicios...</p>}
 
             <div className="grid grid-cols-2 gap-3">
-              {services?.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedServiceId(service.id)}
-                  className={cn(
-                    "min-h-[68px] rounded-xl border-2 px-3 py-3 text-left text-sm font-semibold transition-colors",
-                    selectedServiceId === service.id
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border bg-background text-foreground hover:border-primary/40",
-                  )}
-                >
-                  {service.name}
-                </button>
-              ))}
+              {services?.map((service) => {
+                const selected = selectedServiceIds.includes(service.id);
+                return (
+                  <button
+                    key={service.id}
+                    onClick={() => toggleService(service.id)}
+                    className={cn(
+                      "relative min-h-[68px] rounded-xl border-2 px-3 py-3 text-left text-sm font-semibold transition-colors",
+                      selected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border bg-background text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {selected && (
+                      <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />
+                    )}
+                    {service.name}
+                  </button>
+                );
+              })}
             </div>
 
-            {selectedServiceId && (
+            {selectedServiceIds.length > 0 && (
               <div className="flex flex-col gap-3 border-t border-border pt-4">
-                <Input
-                  placeholder="Cliente (opcional)"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                />
-                <Input
-                  placeholder="Observaciones (opcional)"
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                />
-                <Button size="lg" onClick={handleStart} disabled={startService.isPending}>
+                <p className="text-sm text-muted-foreground">
+                  Total ({selectedServiceIds.length}{" "}
+                  {selectedServiceIds.length === 1 ? "servicio" : "servicios"}):{" "}
+                  <span className="font-semibold text-foreground">
+                    Gs. {selectedTotalPrice.toLocaleString("es-PY")}
+                  </span>
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("CASH")}
+                    className={cn(
+                      "rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition-colors",
+                      paymentMethod === "CASH"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border bg-background text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    Efectivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("TRANSFER")}
+                    className={cn(
+                      "rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition-colors",
+                      paymentMethod === "TRANSFER"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border bg-background text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    Transferencia
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Input
+                    placeholder={clientNameRequired ? "Cliente (obligatorio)" : "Cliente (opcional)"}
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className={cn(clientNameMissing && "border-destructive focus-visible:ring-destructive")}
+                  />
+                  {clientNameMissing && (
+                    <p className="text-xs text-destructive">
+                      El nombre del cliente es obligatorio para pagos por transferencia.
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="lg"
+                  onClick={handleStart}
+                  disabled={startService.isPending || clientNameMissing}
+                >
                   <Sparkles className="h-4 w-4" />
                   Iniciar servicio
                 </Button>

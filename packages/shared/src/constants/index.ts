@@ -7,6 +7,9 @@ export type BarberStatus = (typeof BARBER_STATUS)[number];
 export const SERVICE_SESSION_STATUS = ["IN_SERVICE", "COMPLETED", "CANCELLED"] as const;
 export type ServiceSessionStatus = (typeof SERVICE_SESSION_STATUS)[number];
 
+export const PAYMENT_METHODS = ["CASH", "TRANSFER"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 export const AUDIT_ACTIONS = [
   "SERVICE_STARTED",
   "SERVICE_FINISHED",
