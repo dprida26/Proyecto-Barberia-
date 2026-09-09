@@ -27,6 +27,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      TZ: America/Asuncion
       CORS_ORIGIN: http://localhost:3010
       DATABASE_URL: postgresql://barberops:barberops@postgres:5432/barberops
       JWT_SECRET: ${JWT_SECRET:-dev-access-secret}
