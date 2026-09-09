@@ -42,12 +42,12 @@ export default function ReportesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reportes</h1>
           <p className="text-sm text-muted-foreground">Estadisticas por periodo, barbero y servicio.</p>
         </div>
-        <Button variant="outline" onClick={download}>
+        <Button variant="outline" onClick={download} className="self-start sm:self-auto">
           <Download className="h-4 w-4" />
           Exportar CSV
         </Button>
@@ -69,7 +69,7 @@ export default function ReportesPage() {
               {PERIOD_LABELS[p]}
             </button>
           ))}
-          <div className="ml-auto">
+          <div className="w-full sm:ml-auto sm:w-auto">
             <DateRangePicker
               range={customRange}
               onRangeChange={handleCustomRangeChange}
@@ -83,7 +83,7 @@ export default function ReportesPage() {
         <p className="text-sm text-muted-foreground">Cargando reporte...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <KpiCard label="Servicios" value={data.totals.servicesCount} icon={BarChart3} />
             <KpiCard
               label="Facturacion"
@@ -134,9 +134,15 @@ export default function ReportesPage() {
                     <p className="font-medium text-foreground">{barber.barberName}</p>
                     <p className="text-sm text-muted-foreground">{barber.servicesCount} servicios</p>
                   </div>
-                  <p className="font-semibold text-foreground">
-                    Gs. {Number(barber.revenue).toLocaleString("es-PY")}
-                  </p>
+                  <div className="text-right">
+                    <p className="font-semibold text-foreground">
+                      Gs. {Number(barber.revenue).toLocaleString("es-PY")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Barbero Gs. {Number(barber.barberEarning).toLocaleString("es-PY")} · Barberia Gs.{" "}
+                      {Number(barber.businessEarning).toLocaleString("es-PY")}
+                    </p>
+                  </div>
                 </div>
               ))}
             </CardContent>

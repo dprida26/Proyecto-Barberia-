@@ -80,13 +80,14 @@ model User {
 }
 
 model Barber {
-  id            String       @id @default(uuid())
-  tenantId      String
-  userId        String       @unique
-  displayName   String
-  isAvailable   Boolean      @default(true)
-  currentStatus BarberStatus @default(AVAILABLE)
-  createdAt     DateTime     @default(now())
+  id                String       @id @default(uuid())
+  tenantId          String
+  userId            String       @unique
+  displayName       String
+  isAvailable       Boolean      @default(true)
+  currentStatus     BarberStatus @default(AVAILABLE)
+  commissionPercent Decimal      @default(50.00) @db.Decimal(5, 2)
+  createdAt         DateTime     @default(now())
 
   user            User              @relation(fields: [userId], references: [id])
   serviceSessions ServiceSession[]
@@ -103,7 +104,6 @@ model ServiceCatalog {
   category             String?
   durationEstimateMin  Int
   currentPrice         Decimal  @db.Decimal(10, 2)
-  commissionPercent    Decimal? @db.Decimal(5, 2)
   isActive             Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -116,19 +116,20 @@ model ServiceCatalog {
 }
 
 model ServiceSession {
-  id              String                @id @default(uuid())
-  tenantId        String
-  barberId        String
-  serviceId       String
-  clientNameFree  String?
-  observations    String?
-  priceAtStart    Decimal               @db.Decimal(10, 2)
-  status          ServiceSessionStatus  @default(IN_SERVICE)
-  startedAt       DateTime              @default(now())
-  endedAt         DateTime?
-  durationSeconds Int?
-  cancelReason    String?
-  createdAt       DateTime              @default(now())
+  id                            String               @id @default(uuid())
+  tenantId                      String
+  barberId                      String
+  serviceId                     String
+  clientNameFree                String?
+  observations                  String?
+  priceAtStart                  Decimal              @db.Decimal(10, 2)
+  commissionPercentAtCompletion Decimal?             @db.Decimal(5, 2)
+  status                        ServiceSessionStatus @default(IN_SERVICE)
+  startedAt                     DateTime             @default(now())
+  endedAt                       DateTime?
+  durationSeconds               Int?
+  cancelReason                  String?
+  createdAt                     DateTime             @default(now())
 
   tenant  Tenant         @relation(fields: [tenantId], references: [id])
   barber  Barber         @relation(fields: [barberId], references: [id])

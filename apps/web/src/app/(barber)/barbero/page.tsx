@@ -19,7 +19,9 @@ import {
   useStartService,
 } from "@/features/barber-session/use-barber-session";
 import { ServiceSummarySection } from "@/features/barber-session/ServiceSummarySection";
+import { EarningsSummarySection } from "@/features/barber-session/EarningsSummarySection";
 import { useSessionStore } from "@/stores/session.store";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function BarberScreen() {
   const user = useSessionStore((s) => s.user);
@@ -61,6 +63,39 @@ function BarberScreen() {
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
   }, [completedToday]);
 
+  const todayEarningsByService = useMemo(() => {
+    const map = new Map<
+      string,
+      { serviceId: string; label: string; count: number; barberEarning: number; businessEarning: number }
+    >();
+    for (const session of completedToday) {
+      const entry = map.get(session.serviceId) ?? {
+        serviceId: session.serviceId,
+        label: session.serviceName,
+        count: 0,
+        barberEarning: 0,
+        businessEarning: 0,
+      };
+      entry.count += 1;
+      entry.barberEarning += Number(session.barberEarning ?? 0);
+      entry.businessEarning += Number(session.businessEarning ?? 0);
+      map.set(session.serviceId, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => b.barberEarning - a.barberEarning);
+  }, [completedToday]);
+
+  const todayTotals = useMemo(
+    () =>
+      completedToday.reduce(
+        (acc, session) => ({
+          barberEarning: acc.barberEarning + Number(session.barberEarning ?? 0),
+          businessEarning: acc.businessEarning + Number(session.businessEarning ?? 0),
+        }),
+        { barberEarning: 0, businessEarning: 0 },
+      ),
+    [completedToday],
+  );
+
   const { formatted: elapsed } = useElapsedTime(activeSession?.startedAt ?? null);
 
   async function handleStart() {
@@ -92,9 +127,12 @@ function BarberScreen() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">Hola, {user?.displayName}</h1>
           <StatusDot status={activeSession ? "IN_SERVICE" : "AVAILABLE"} />
         </div>
-        <Button variant="ghost" size="icon" onClick={clearSession} aria-label="Cerrar sesion">
-          <LogOut className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={clearSession} aria-label="Cerrar sesion">
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
       </header>
 
       {activeSession ? (
@@ -166,12 +204,64 @@ function BarberScreen() {
         </Card>
       )}
 
+      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mi ganancia</h2>
+
+      <EarningsSummarySection
+        title="Hoy"
+        totalBarberEarning={todayTotals.barberEarning.toFixed(2)}
+        totalBusinessEarning={todayTotals.businessEarning.toFixed(2)}
+        items={todayEarningsByService.map((item) => ({
+          key: item.serviceId,
+          label: item.label,
+          count: item.count,
+          barberEarning: item.barberEarning.toFixed(2),
+          businessEarning: item.businessEarning.toFixed(2),
+        }))}
+        emptyLabel="Aun no completaste servicios hoy."
+        defaultOpen
+      />
+
+      <EarningsSummarySection
+        title="Esta semana"
+        totalBarberEarning={weekSummary?.totalBarberEarning ?? "0.00"}
+        totalBusinessEarning={weekSummary?.totalBusinessEarning ?? "0.00"}
+        items={
+          weekSummary?.byService.map((item) => ({
+            key: item.serviceId,
+            label: item.serviceName,
+            count: item.count,
+            barberEarning: item.barberEarning,
+            businessEarning: item.businessEarning,
+          })) ?? []
+        }
+        emptyLabel="Aun no completaste servicios esta semana."
+      />
+
+      <EarningsSummarySection
+        title="Este mes"
+        totalBarberEarning={monthSummary?.totalBarberEarning ?? "0.00"}
+        totalBusinessEarning={monthSummary?.totalBusinessEarning ?? "0.00"}
+        items={
+          monthSummary?.byService.map((item) => ({
+            key: item.serviceId,
+            label: item.serviceName,
+            count: item.count,
+            barberEarning: item.barberEarning,
+            businessEarning: item.businessEarning,
+          })) ?? []
+        }
+        emptyLabel="Aun no completaste servicios este mes."
+      />
+
+      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Servicios realizados
+      </h2>
+
       <ServiceSummarySection
         title="Hoy"
         totalCount={completedToday.length}
         items={todayByService.map((item) => ({ key: item.serviceId, label: item.label, count: item.count }))}
         emptyLabel="Aun no completaste servicios hoy."
-        defaultOpen
       />
 
       <ServiceSummarySection

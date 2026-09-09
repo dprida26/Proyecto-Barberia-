@@ -1,4 +1,5 @@
 import { prisma } from "../../database/client";
+import { computeEarnings } from "@barberops/shared";
 
 interface ReportFilters {
   from: Date;
@@ -33,6 +34,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         barberId: true,
         serviceId: true,
         priceAtStart: true,
+        commissionPercentAtCompletion: true,
         durationSeconds: true,
         startedAt: true,
         barber: { select: { displayName: true } },
@@ -43,24 +45,44 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
 
   const byBarberMap = new Map<
     string,
-    { barberName: string; servicesCount: number; revenue: number; totalDuration: number }
+    {
+      barberName: string;
+      servicesCount: number;
+      revenue: number;
+      totalDuration: number;
+      barberEarning: number;
+      businessEarning: number;
+    }
   >();
   const byServiceMap = new Map<string, { serviceName: string; servicesCount: number; revenue: number }>();
   const byHourMap = new Map<number, number>();
 
+  let totalBarberEarning = 0;
+  let totalBusinessEarning = 0;
+
   for (const session of sessions) {
     const price = Number(session.priceAtStart);
     const duration = session.durationSeconds ?? 0;
+    const { barberEarning, businessEarning } = computeEarnings(
+      price,
+      Number(session.commissionPercentAtCompletion ?? 0),
+    );
+    totalBarberEarning += barberEarning;
+    totalBusinessEarning += businessEarning;
 
     const barberEntry = byBarberMap.get(session.barberId) ?? {
       barberName: session.barber.displayName,
       servicesCount: 0,
       revenue: 0,
       totalDuration: 0,
+      barberEarning: 0,
+      businessEarning: 0,
     };
     barberEntry.servicesCount += 1;
     barberEntry.revenue += price;
     barberEntry.totalDuration += duration;
+    barberEntry.barberEarning += barberEarning;
+    barberEntry.businessEarning += businessEarning;
     byBarberMap.set(session.barberId, barberEntry);
 
     const serviceEntry = byServiceMap.get(session.serviceId) ?? {
@@ -82,6 +104,8 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     servicesCount: v.servicesCount,
     revenue: v.revenue.toFixed(2),
     avgDurationSeconds: v.servicesCount ? Math.round(v.totalDuration / v.servicesCount) : 0,
+    barberEarning: v.barberEarning.toFixed(2),
+    businessEarning: v.businessEarning.toFixed(2),
   }));
 
   const byService = Array.from(byServiceMap.entries()).map(([serviceId, v]) => ({
@@ -109,6 +133,8 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       revenue: revenue.toFixed(2),
       avgTicket: servicesCount ? (revenue / servicesCount).toFixed(2) : "0.00",
       avgDurationSeconds: Math.round(totals._avg.durationSeconds ?? 0),
+      barberEarning: totalBarberEarning.toFixed(2),
+      businessEarning: totalBusinessEarning.toFixed(2),
     },
     byBarber,
     byService,

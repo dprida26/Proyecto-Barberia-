@@ -8,6 +8,7 @@ export interface BarberAdminItem {
   displayName: string;
   isAvailable: boolean;
   currentStatus: string;
+  commissionPercent: string;
   user: { email: string; isActive: boolean };
 }
 

@@ -30,7 +30,6 @@ export interface ServiceCatalogItem {
   category: string | null;
   durationEstimateMin: number;
   currentPrice: string;
-  commissionPercent: string | null;
   isActive: boolean;
 }
 
@@ -40,6 +39,7 @@ export interface BarberSummary {
   displayName: string;
   isAvailable: boolean;
   currentStatus: BarberStatus;
+  commissionPercent: string;
   activeSession: ActiveServiceSession | null;
 }
 
@@ -61,6 +61,9 @@ export interface ServiceSessionRecord {
   clientNameFree: string | null;
   observations: string | null;
   priceAtStart: string;
+  commissionPercentAtCompletion: string | null;
+  barberEarning: string | null;
+  businessEarning: string | null;
   status: ServiceSessionStatus;
   startedAt: string;
   endedAt: string | null;
@@ -76,6 +79,7 @@ export interface DashboardLiveSnapshot {
     barbersActive: number;
     barbersAvailable: number;
     revenueToday: string;
+    businessEarningToday: string;
   };
 }
 
@@ -86,6 +90,8 @@ export interface ReportSummary {
     revenue: string;
     avgTicket: string;
     avgDurationSeconds: number;
+    barberEarning: string;
+    businessEarning: string;
   };
   byBarber: Array<{
     barberId: string;
@@ -93,6 +99,8 @@ export interface ReportSummary {
     servicesCount: number;
     revenue: string;
     avgDurationSeconds: number;
+    barberEarning: string;
+    businessEarning: string;
   }>;
   byService: Array<{
     serviceId: string;

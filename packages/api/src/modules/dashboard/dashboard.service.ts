@@ -1,4 +1,5 @@
 import { prisma } from "../../database/client";
+import { computeEarnings } from "@barberops/shared";
 
 export async function getLiveSnapshot(tenantId: string) {
   const startOfDay = new Date();
@@ -16,19 +17,28 @@ export async function getLiveSnapshot(tenantId: string) {
     orderBy: { displayName: "asc" },
   });
 
-  const [servicesToday, servicesInProgress, revenueAgg] = await Promise.all([
+  const [servicesToday, servicesInProgress, completedTodaySessions] = await Promise.all([
     prisma.serviceSession.count({
       where: { tenantId, status: "COMPLETED", startedAt: { gte: startOfDay } },
     }),
     prisma.serviceSession.count({ where: { tenantId, status: "IN_SERVICE" } }),
-    prisma.serviceSession.aggregate({
+    prisma.serviceSession.findMany({
       where: { tenantId, status: "COMPLETED", startedAt: { gte: startOfDay } },
-      _sum: { priceAtStart: true },
+      select: { priceAtStart: true, commissionPercentAtCompletion: true },
     }),
   ]);
 
   const barbersActive = barbers.filter((b) => b.currentStatus === "IN_SERVICE").length;
   const barbersAvailable = barbers.filter((b) => b.currentStatus === "AVAILABLE" && b.isAvailable).length;
+
+  let revenueToday = 0;
+  let businessEarningToday = 0;
+  for (const session of completedTodaySessions) {
+    const price = Number(session.priceAtStart);
+    revenueToday += price;
+    const { businessEarning } = computeEarnings(price, Number(session.commissionPercentAtCompletion ?? 0));
+    businessEarningToday += businessEarning;
+  }
 
   return {
     barbers: barbers.map((b) => ({
@@ -37,6 +47,7 @@ export async function getLiveSnapshot(tenantId: string) {
       displayName: b.displayName,
       isAvailable: b.isAvailable,
       currentStatus: b.currentStatus,
+      commissionPercent: b.commissionPercent.toString(),
       activeSession: b.serviceSessions[0]
         ? {
             id: b.serviceSessions[0].id,
@@ -52,7 +63,8 @@ export async function getLiveSnapshot(tenantId: string) {
       servicesInProgress,
       barbersActive,
       barbersAvailable,
-      revenueToday: (revenueAgg._sum.priceAtStart ?? 0).toString(),
+      revenueToday: revenueToday.toFixed(2),
+      businessEarningToday: businessEarningToday.toFixed(2),
     },
   };
 }

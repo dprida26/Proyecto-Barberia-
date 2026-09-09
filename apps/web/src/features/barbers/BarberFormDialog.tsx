@@ -21,7 +21,7 @@ interface BarberFormDialogProps {
   barber?: BarberAdminItem | null;
 }
 
-const emptyForm = { displayName: "", email: "", password: "", isAvailable: true };
+const emptyForm = { displayName: "", email: "", password: "", isAvailable: true, commissionPercent: "50" };
 
 export function BarberFormDialog({ open, onOpenChange, barber }: BarberFormDialogProps) {
   const isEdit = Boolean(barber);
@@ -33,7 +33,13 @@ export function BarberFormDialog({ open, onOpenChange, barber }: BarberFormDialo
     if (open) {
       setForm(
         barber
-          ? { displayName: barber.displayName, email: barber.user.email, password: "", isAvailable: barber.isAvailable }
+          ? {
+              displayName: barber.displayName,
+              email: barber.user.email,
+              password: "",
+              isAvailable: barber.isAvailable,
+              commissionPercent: barber.commissionPercent,
+            }
           : emptyForm,
       );
     }
@@ -47,13 +53,19 @@ export function BarberFormDialog({ open, onOpenChange, barber }: BarberFormDialo
     if (isEdit && barber) {
       await updateBarber.mutateAsync({
         id: barber.id,
-        input: { displayName: form.displayName, email: form.email, isAvailable: form.isAvailable },
+        input: {
+          displayName: form.displayName,
+          email: form.email,
+          isAvailable: form.isAvailable,
+          commissionPercent: Number(form.commissionPercent),
+        },
       });
     } else {
       await createBarber.mutateAsync({
         displayName: form.displayName,
         email: form.email,
         password: form.password,
+        commissionPercent: Number(form.commissionPercent),
       });
     }
     onOpenChange(false);
@@ -105,6 +117,21 @@ export function BarberFormDialog({ open, onOpenChange, barber }: BarberFormDialo
                 />
               </div>
             )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="commissionPercent">% comision del barbero</Label>
+              <Input
+                id="commissionPercent"
+                type="number"
+                min={0}
+                max={100}
+                value={form.commissionPercent}
+                onChange={(e) => setForm((f) => ({ ...f, commissionPercent: e.target.value }))}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                El resto ({(100 - Number(form.commissionPercent || 0)).toFixed(0)}%) queda para la barberia.
+              </p>
+            </div>
             {isEdit && (
               <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
                 <div>

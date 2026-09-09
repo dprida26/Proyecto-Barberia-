@@ -1,6 +1,10 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ServiceCatalogItem, ServiceSessionRecord } from "@barberops/shared";
+import { SOCKET_EVENTS } from "@barberops/shared";
 import { apiClient } from "@/lib/api-client";
+import { getDashboardSocket } from "@/lib/socket-client";
+import { useSessionStore } from "@/stores/session.store";
 
 interface ApiListResponse<T> {
   data: T[];
@@ -18,6 +22,25 @@ export function useActiveServices() {
 }
 
 export function useMyTodaySessions() {
+  const queryClient = useQueryClient();
+  const accessToken = useSessionStore((s) => s.accessToken);
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const socket = getDashboardSocket(accessToken);
+
+    function refetch() {
+      queryClient.invalidateQueries({ queryKey: ["service-sessions", "mine"] });
+    }
+
+    socket.on(SOCKET_EVENTS.SERVICE_FINISHED, refetch);
+
+    return () => {
+      socket.off(SOCKET_EVENTS.SERVICE_FINISHED, refetch);
+    };
+  }, [accessToken, queryClient]);
+
   return useQuery({
     queryKey: ["service-sessions", "mine", "today"],
     queryFn: () =>
@@ -31,10 +54,16 @@ export interface MySummaryByService {
   serviceId: string;
   serviceName: string;
   count: number;
+  revenue: string;
+  barberEarning: string;
+  businessEarning: string;
 }
 
 export interface MySummary {
   totalCount: number;
+  totalRevenue: string;
+  totalBarberEarning: string;
+  totalBusinessEarning: string;
   byService: MySummaryByService[];
 }
 

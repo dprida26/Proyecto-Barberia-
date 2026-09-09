@@ -54,7 +54,7 @@ export default function BarberosPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Barberos</h1>
           <p className="text-sm text-muted-foreground">Equipo de barberos de la barberia.</p>
@@ -78,65 +78,120 @@ export default function BarberosPage() {
             <p className="px-5 pb-5 text-sm text-muted-foreground">Aun no hay barberos cargados.</p>
           )}
           {!isLoading && barbers && barbers.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Disponibilidad</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile: stacked cards */}
+              <div className="flex flex-col divide-y divide-border md:hidden">
                 {barbers.map((barber) => (
-                  <TableRow key={barber.id}>
-                    <TableCell className="font-medium text-foreground">{barber.displayName}</TableCell>
-                    <TableCell className="text-muted-foreground">{barber.user.email}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          barber.currentStatus === "IN_SERVICE"
-                            ? "success"
+                  <div key={barber.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">{barber.displayName}</p>
+                      <p className="truncate text-sm text-muted-foreground">{barber.user.email}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <Badge
+                          variant={
+                            barber.currentStatus === "IN_SERVICE"
+                              ? "success"
+                              : barber.currentStatus === "WAITING"
+                                ? "warning"
+                                : "primary"
+                          }
+                        >
+                          {barber.currentStatus === "IN_SERVICE"
+                            ? "En servicio"
                             : barber.currentStatus === "WAITING"
-                              ? "warning"
-                              : "primary"
-                        }
-                      >
-                        {barber.currentStatus === "IN_SERVICE"
-                          ? "En servicio"
-                          : barber.currentStatus === "WAITING"
-                            ? "En espera"
-                            : "Disponible"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={barber.isAvailable ? "success" : "default"}>
-                        {barber.isAvailable ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(barber)}>Editar</DropdownMenuItem>
-                          <DropdownMenuItem
-                            destructive={barber.isAvailable}
-                            onClick={() => handleToggle(barber)}
-                          >
-                            {barber.isAvailable ? "Desactivar" : "Activar"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                              ? "En espera"
+                              : "Disponible"}
+                        </Badge>
+                        <Badge variant={barber.isAvailable ? "success" : "default"}>
+                          {barber.isAvailable ? "Activo" : "Inactivo"}
+                        </Badge>
+                        <Badge variant="warning">{Number(barber.commissionPercent)}% comision</Badge>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(barber)}>Editar</DropdownMenuItem>
+                        <DropdownMenuItem destructive={barber.isAvailable} onClick={() => handleToggle(barber)}>
+                          {barber.isAvailable ? "Desactivar" : "Activar"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Disponibilidad</TableHead>
+                      <TableHead>Comision</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {barbers.map((barber) => (
+                      <TableRow key={barber.id}>
+                        <TableCell className="font-medium text-foreground">{barber.displayName}</TableCell>
+                        <TableCell className="text-muted-foreground">{barber.user.email}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              barber.currentStatus === "IN_SERVICE"
+                                ? "success"
+                                : barber.currentStatus === "WAITING"
+                                  ? "warning"
+                                  : "primary"
+                            }
+                          >
+                            {barber.currentStatus === "IN_SERVICE"
+                              ? "En servicio"
+                              : barber.currentStatus === "WAITING"
+                                ? "En espera"
+                                : "Disponible"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={barber.isAvailable ? "success" : "default"}>
+                            {barber.isAvailable ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {Number(barber.commissionPercent)}% / {100 - Number(barber.commissionPercent)}%
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(barber)}>Editar</DropdownMenuItem>
+                              <DropdownMenuItem
+                                destructive={barber.isAvailable}
+                                onClick={() => handleToggle(barber)}
+                              >
+                                {barber.isAvailable ? "Desactivar" : "Activar"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

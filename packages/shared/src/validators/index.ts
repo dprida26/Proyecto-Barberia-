@@ -12,7 +12,6 @@ export const createServiceCatalogSchema = z.object({
   category: z.string().max(60).optional(),
   durationEstimateMin: z.number().int().min(1).max(600),
   currentPrice: z.number().nonnegative(),
-  commissionPercent: z.number().min(0).max(100).optional(),
   isActive: z.boolean().default(true),
 });
 export type CreateServiceCatalogInput = z.infer<typeof createServiceCatalogSchema>;
@@ -24,6 +23,7 @@ export const createBarberSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   displayName: z.string().min(2).max(80),
+  commissionPercent: z.number().min(0).max(100).default(50),
 });
 export type CreateBarberInput = z.infer<typeof createBarberSchema>;
 
@@ -31,6 +31,7 @@ export const updateBarberSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
   isAvailable: z.boolean().optional(),
   email: z.string().email().optional(),
+  commissionPercent: z.number().min(0).max(100).optional(),
 });
 export type UpdateBarberInput = z.infer<typeof updateBarberSchema>;
 

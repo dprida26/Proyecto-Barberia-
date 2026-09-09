@@ -2,7 +2,7 @@ import { prisma } from "../../database/client";
 import { ConflictError, NotFoundError } from "../../common/errors";
 import { recordAudit } from "../audit/audit.service";
 import { emitToTenant } from "../../websockets/io";
-import { SOCKET_EVENTS } from "@barberops/shared";
+import { SOCKET_EVENTS, computeEarnings } from "@barberops/shared";
 import type { CancelServiceSessionInput, StartServiceSessionInput } from "@barberops/shared";
 
 export async function startServiceSession(
@@ -78,10 +78,17 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
   const endedAt = new Date();
   const durationSeconds = Math.round((endedAt.getTime() - session.startedAt.getTime()) / 1000);
 
+  const commissionPercent = barber.commissionPercent;
+
   const updated = await prisma.$transaction(async (tx) => {
     const finished = await tx.serviceSession.update({
       where: { id: sessionId },
-      data: { status: "COMPLETED", endedAt, durationSeconds },
+      data: {
+        status: "COMPLETED",
+        endedAt,
+        durationSeconds,
+        commissionPercentAtCompletion: commissionPercent,
+      },
     });
     await tx.barber.update({ where: { id: barber.id }, data: { currentStatus: "AVAILABLE" } });
     return finished;
@@ -96,10 +103,17 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
     metadata: { durationSeconds },
   });
 
+  const { barberEarning, businessEarning } = computeEarnings(
+    Number(session.priceAtStart),
+    Number(commissionPercent),
+  );
+
   emitToTenant(tenantId, SOCKET_EVENTS.SERVICE_FINISHED, {
     sessionId,
     barberId: barber.id,
     durationSeconds,
+    barberEarning: barberEarning.toFixed(2),
+    businessEarning: businessEarning.toFixed(2),
   });
 
   return updated;
@@ -158,7 +172,17 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
     orderBy: { startedAt: "desc" },
   });
 
-  return sessions.map(({ service, ...session }) => ({ ...session, serviceName: service.name }));
+  return sessions.map(({ service, ...session }) => {
+    const earnings = session.commissionPercentAtCompletion
+      ? computeEarnings(Number(session.priceAtStart), Number(session.commissionPercentAtCompletion))
+      : null;
+    return {
+      ...session,
+      serviceName: service.name,
+      barberEarning: earnings ? earnings.barberEarning.toFixed(2) : null,
+      businessEarning: earnings ? earnings.businessEarning.toFixed(2) : null,
+    };
+  });
 }
 
 export async function getMySummary(tenantId: string, barberUserId: string, period: "week" | "month") {
@@ -180,18 +204,56 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
     include: { service: { select: { name: true } } },
   });
 
-  const byServiceMap = new Map<string, { serviceName: string; count: number }>();
+  const byServiceMap = new Map<
+    string,
+    { serviceName: string; count: number; revenue: number; barberEarning: number; businessEarning: number }
+  >();
+  let totalRevenue = 0;
+  let totalBarberEarning = 0;
+  let totalBusinessEarning = 0;
+
   for (const session of sessions) {
-    const entry = byServiceMap.get(session.serviceId) ?? { serviceName: session.service.name, count: 0 };
+    const price = Number(session.priceAtStart);
+    const { barberEarning, businessEarning } = computeEarnings(
+      price,
+      Number(session.commissionPercentAtCompletion ?? 0),
+    );
+    totalRevenue += price;
+    totalBarberEarning += barberEarning;
+    totalBusinessEarning += businessEarning;
+
+    const entry = byServiceMap.get(session.serviceId) ?? {
+      serviceName: session.service.name,
+      count: 0,
+      revenue: 0,
+      barberEarning: 0,
+      businessEarning: 0,
+    };
     entry.count += 1;
+    entry.revenue += price;
+    entry.barberEarning += barberEarning;
+    entry.businessEarning += businessEarning;
     byServiceMap.set(session.serviceId, entry);
   }
 
   const byService = Array.from(byServiceMap.entries())
-    .map(([serviceId, v]) => ({ serviceId, serviceName: v.serviceName, count: v.count }))
+    .map(([serviceId, v]) => ({
+      serviceId,
+      serviceName: v.serviceName,
+      count: v.count,
+      revenue: v.revenue.toFixed(2),
+      barberEarning: v.barberEarning.toFixed(2),
+      businessEarning: v.businessEarning.toFixed(2),
+    }))
     .sort((a, b) => b.count - a.count);
 
-  return { totalCount: sessions.length, byService };
+  return {
+    totalCount: sessions.length,
+    totalRevenue: totalRevenue.toFixed(2),
+    totalBarberEarning: totalBarberEarning.toFixed(2),
+    totalBusinessEarning: totalBusinessEarning.toFixed(2),
+    byService,
+  };
 }
 
 export async function listServiceSessions(

@@ -26,7 +26,6 @@ const emptyForm = {
   category: "",
   durationEstimateMin: "30",
   currentPrice: "",
-  commissionPercent: "",
 };
 
 export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDialogProps) {
@@ -44,7 +43,6 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
               category: service.category ?? "",
               durationEstimateMin: String(service.durationEstimateMin),
               currentPrice: String(service.currentPrice),
-              commissionPercent: service.commissionPercent ?? "",
             }
           : emptyForm,
       );
@@ -61,7 +59,6 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
       category: form.category || undefined,
       durationEstimateMin: Number(form.durationEstimateMin),
       currentPrice: Number(form.currentPrice),
-      commissionPercent: form.commissionPercent ? Number(form.commissionPercent) : undefined,
     };
 
     if (isEdit && service) {
@@ -123,17 +120,6 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
                 value={form.currentPrice}
                 onChange={(e) => setForm((f) => ({ ...f, currentPrice: e.target.value }))}
                 required
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="commission">Comision (%)</Label>
-              <Input
-                id="commission"
-                type="number"
-                min={0}
-                max={100}
-                value={form.commissionPercent}
-                onChange={(e) => setForm((f) => ({ ...f, commissionPercent: e.target.value }))}
               />
             </div>
           </div>

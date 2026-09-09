@@ -29,6 +29,7 @@ export async function createBarber(tenantId: string, input: CreateBarberInput, a
         tenantId,
         userId: user.id,
         displayName: input.displayName,
+        commissionPercent: input.commissionPercent,
       },
       include: { user: { select: { email: true } } },
     });
@@ -65,6 +66,7 @@ export async function updateBarber(tenantId: string, barberId: string, input: Up
       data: {
         displayName: input.displayName ?? undefined,
         isAvailable: input.isAvailable ?? undefined,
+        commissionPercent: input.commissionPercent ?? undefined,
       },
       include: { user: { select: { email: true, isActive: true } } },
     });

@@ -19,7 +19,7 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground">Actividad de la barberia en tiempo real.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6">
         <KpiCard label="Servicios hoy" value={data.kpis.servicesToday} icon={ListChecks} />
         <KpiCard label="En curso" value={data.kpis.servicesInProgress} icon={CircleDot} accent="success" />
         <KpiCard label="Activos" value={data.kpis.barbersActive} icon={CalendarCheck} accent="success" />
@@ -29,6 +29,12 @@ export default function DashboardPage() {
           value={`Gs. ${Number(data.kpis.revenueToday).toLocaleString("es-PY")}`}
           icon={Banknote}
           accent="warning"
+        />
+        <KpiCard
+          label="Ganancia barberia hoy"
+          value={`Gs. ${Number(data.kpis.businessEarningToday).toLocaleString("es-PY")}`}
+          icon={Banknote}
+          accent="success"
         />
       </div>
 

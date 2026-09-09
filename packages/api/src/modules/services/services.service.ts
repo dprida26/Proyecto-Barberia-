@@ -19,7 +19,6 @@ export async function createService(tenantId: string, input: CreateServiceCatalo
       category: input.category,
       durationEstimateMin: input.durationEstimateMin,
       currentPrice: input.currentPrice,
-      commissionPercent: input.commissionPercent,
       isActive: input.isActive,
     },
   });
@@ -54,7 +53,6 @@ export async function updateService(
       category: input.category,
       durationEstimateMin: input.durationEstimateMin,
       currentPrice: input.currentPrice,
-      commissionPercent: input.commissionPercent,
       isActive: input.isActive,
     },
   });
