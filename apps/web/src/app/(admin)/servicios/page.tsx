@@ -20,10 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAllServices, useUpdateService } from "@/features/services/use-services-admin";
 import { ServiceFormDialog } from "@/features/services/ServiceFormDialog";
+import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
+import { apiBaseUrl } from "@/lib/env";
 
 export default function ServiciosPage() {
   const { data: services, isLoading } = useAllServices();
   const updateService = useUpdateService();
+  const { data: tenant } = useTenantSettings();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceCatalogItem | null>(null);
@@ -56,9 +59,23 @@ export default function ServiciosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Servicios</h1>
-          <p className="text-sm text-muted-foreground">Catalogo y precios de la barberia.</p>
+        <div className="flex items-center gap-3">
+          {tenant?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${apiBaseUrl}${tenant.logoUrl}`}
+              alt={tenant.name}
+              className="h-10 w-10 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Scissors className="h-5 w-5" />
+            </span>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Servicios</h1>
+            <p className="text-sm text-muted-foreground">Catalogo y precios de la barberia.</p>
+          </div>
         </div>
         <Button onClick={openCreate} className="sm:self-auto">
           <Plus className="h-4 w-4" />
