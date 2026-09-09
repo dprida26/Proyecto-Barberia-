@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createBarberSchema, updateBarberSchema } from "@barberops/shared";
 import { authGuard, roleGuard } from "../../common/guards";
-import { createBarber, listBarbers, updateBarber } from "./barbers.service";
+import { createBarber, deleteBarber, listBarbers, updateBarber } from "./barbers.service";
 
 export async function barbersRoutes(app: FastifyInstance) {
   app.get("/barbers", { preHandler: [authGuard, roleGuard(["ADMIN"])] }, async (request) => {
@@ -20,5 +20,11 @@ export async function barbersRoutes(app: FastifyInstance) {
     const body = updateBarberSchema.parse(request.body);
     const barber = await updateBarber(request.user.tenantId, id, body, request.user.sub);
     return { data: barber };
+  });
+
+  app.delete("/barbers/:id", { preHandler: [authGuard, roleGuard(["ADMIN"])] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    await deleteBarber(request.user.tenantId, id, request.user.sub);
+    reply.code(204).send();
   });
 }

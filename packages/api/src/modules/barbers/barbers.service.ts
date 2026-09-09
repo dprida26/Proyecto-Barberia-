@@ -46,6 +46,31 @@ export async function createBarber(tenantId: string, input: CreateBarberInput, a
   return barber;
 }
 
+export async function deleteBarber(tenantId: string, barberId: string, actingUserId: string) {
+  const existing = await prisma.barber.findFirst({ where: { id: barberId, tenantId } });
+  if (!existing) throw new NotFoundError("Barbero no encontrado");
+
+  const sessionsCount = await prisma.serviceSession.count({ where: { barberId } });
+  if (sessionsCount > 0) {
+    throw new ConflictError(
+      "No se puede eliminar: el barbero ya tiene servicios registrados. Desactivalo en su lugar.",
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.barber.delete({ where: { id: barberId } });
+    await tx.user.delete({ where: { id: existing.userId } });
+  });
+
+  await recordAudit({
+    tenantId,
+    userId: actingUserId,
+    action: "BARBER_DELETED",
+    entityType: "Barber",
+    entityId: barberId,
+  });
+}
+
 export async function updateBarber(tenantId: string, barberId: string, input: UpdateBarberInput, actingUserId: string) {
   const existing = await prisma.barber.findFirst({ where: { id: barberId, tenantId } });
   if (!existing) throw new NotFoundError("Barbero no encontrado");

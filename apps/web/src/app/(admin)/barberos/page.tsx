@@ -17,7 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useBarbersAdmin, useUpdateBarber, type BarberAdminItem } from "@/features/barbers/use-barbers-admin";
+import {
+  useBarbersAdmin,
+  useDeleteBarber,
+  useUpdateBarber,
+  type BarberAdminItem,
+} from "@/features/barbers/use-barbers-admin";
 import { BarberFormDialog } from "@/features/barbers/BarberFormDialog";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
 import { apiBaseUrl } from "@/lib/env";
@@ -25,11 +30,13 @@ import { apiBaseUrl } from "@/lib/env";
 export default function BarberosPage() {
   const { data: barbers, isLoading } = useBarbersAdmin();
   const updateBarber = useUpdateBarber();
+  const deleteBarber = useDeleteBarber();
   const { data: tenant } = useTenantSettings();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingBarber, setEditingBarber] = useState<BarberAdminItem | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<BarberAdminItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BarberAdminItem | null>(null);
 
   function openCreate() {
     setEditingBarber(null);
@@ -53,6 +60,12 @@ export default function BarberosPage() {
     if (!confirmTarget) return;
     await updateBarber.mutateAsync({ id: confirmTarget.id, input: { isAvailable: false } });
     setConfirmTarget(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    await deleteBarber.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
   }
 
   return (
@@ -136,6 +149,9 @@ export default function BarberosPage() {
                         <DropdownMenuItem destructive={barber.isAvailable} onClick={() => handleToggle(barber)}>
                           {barber.isAvailable ? "Desactivar" : "Activar"}
                         </DropdownMenuItem>
+                        <DropdownMenuItem destructive onClick={() => setDeleteTarget(barber)}>
+                          Eliminar
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -200,6 +216,9 @@ export default function BarberosPage() {
                               >
                                 {barber.isAvailable ? "Desactivar" : "Activar"}
                               </DropdownMenuItem>
+                              <DropdownMenuItem destructive onClick={() => setDeleteTarget(barber)}>
+                                Eliminar
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -227,6 +246,23 @@ export default function BarberosPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeactivate}>Desactivar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar barbero</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.displayName} sera eliminado permanentemente, junto con su acceso a la app. Esta
+              accion no se puede deshacer. Si el barbero ya tiene servicios registrados, no podra eliminarse;
+              usa &quot;Desactivar&quot; en su lugar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -51,3 +51,15 @@ export function useUpdateBarber() {
     onError: (error) => toast.error(errorMessage(error, "No se pudo actualizar el barbero")),
   });
 }
+
+export function useDeleteBarber() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete<void>(`/api/v1/barbers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success("Barbero eliminado");
+    },
+    onError: (error) => toast.error(errorMessage(error, "No se pudo eliminar el barbero")),
+  });
+}
