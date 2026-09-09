@@ -11,6 +11,7 @@
     "db:migrate": "prisma migrate dev --schema=src/database/schema.prisma",
     "db:migrate:deploy": "prisma migrate deploy --schema=src/database/schema.prisma",
     "db:seed": "tsx src/database/seed.ts",
+    "db:bootstrap-admin": "tsx src/database/bootstrap-admin.ts",
     "db:studio": "prisma studio --schema=src/database/schema.prisma",
     "test": "jest --runInBand"
   },

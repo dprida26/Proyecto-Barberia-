@@ -24,4 +24,4 @@ COPY --from=build /repo/packages/shared ./packages/shared
 COPY --from=build /repo/packages/api ./packages/api
 WORKDIR /repo/packages/api
 EXPOSE 3001
-CMD ["sh", "-c", "npm run db:migrate:deploy && node dist/server.js"]
+CMD ["sh", "-c", "npm run db:migrate:deploy && npm run db:bootstrap-admin && node dist/server.js"]
