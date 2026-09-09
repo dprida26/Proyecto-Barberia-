@@ -23,9 +23,10 @@ services:
         fromDatabase:
           name: titi-barberia-db
           property: connectionString
-      # URL publica del servicio web (fija, ver nota en README de deploy).
+      # URL publica real del servicio web (Render le agrego un sufijo por
+      # colision de nombre -- si cambia, actualizar aca).
       - key: CORS_ORIGIN
-        value: https://titi-barberia-web.onrender.com
+        value: https://titi-barberia-web-zf59.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
