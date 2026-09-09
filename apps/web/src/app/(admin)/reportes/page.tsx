@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { BarChart3, ChevronDown, Clock, Download, Receipt, Ticket } from "lucide-react";
+import { Banknote, BarChart3, ChevronDown, Download, Receipt } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import type { ReportPeriod } from "@barberops/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,7 +76,7 @@ export default function ReportesPage() {
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-2 p-4">
-          {(["TODAY", "YESTERDAY", "THIS_WEEK"] as const).map((p) => (
+          {(["TODAY", "THIS_WEEK"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -104,7 +104,7 @@ export default function ReportesPage() {
         <p className="text-sm text-muted-foreground">Cargando reporte...</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <KpiCard label="Servicios" value={data.totals.servicesCount} icon={BarChart3} />
             <KpiCard
               label="Facturacion"
@@ -113,15 +113,10 @@ export default function ReportesPage() {
               accent="success"
             />
             <KpiCard
-              label="Ticket promedio"
-              value={`Gs. ${Number(data.totals.avgTicket).toLocaleString("es-PY")}`}
-              icon={Ticket}
+              label="Ganancia barberia"
+              value={`Gs. ${Number(data.totals.businessEarning).toLocaleString("es-PY")}`}
+              icon={Banknote}
               accent="warning"
-            />
-            <KpiCard
-              label="Duracion promedio"
-              value={`${Math.round(data.totals.avgDurationSeconds / 60)} min`}
-              icon={Clock}
             />
           </div>
 

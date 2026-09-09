@@ -3,7 +3,7 @@ import type { ReportPeriod } from "@barberops/shared";
 export const PERIOD_LABELS: Record<ReportPeriod, string> = {
   TODAY: "Hoy",
   YESTERDAY: "Ayer",
-  THIS_WEEK: "Esta semana",
+  THIS_WEEK: "Corte semanal",
   LAST_WEEK: "Semana anterior",
   THIS_MONTH: "Este mes",
   LAST_MONTH: "Mes anterior",
@@ -26,8 +26,7 @@ function endOfDay(date: Date) {
 function startOfWeek(date: Date) {
   const d = startOfDay(date);
   const day = d.getDay();
-  const diff = day === 0 ? 6 : day - 1;
-  d.setDate(d.getDate() - diff);
+  d.setDate(d.getDate() - day);
   return d;
 }
 
