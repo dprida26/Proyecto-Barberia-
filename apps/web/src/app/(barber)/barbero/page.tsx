@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { StatusDot } from "@/components/barber/StatusDot";
 import { cn } from "@/lib/utils";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
@@ -40,6 +50,7 @@ function BarberScreen() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [observations, setObservations] = useState("");
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const activeSession = useMemo(
     () => todaySessions?.find((s) => s.status === "IN_SERVICE") ?? null,
@@ -94,9 +105,10 @@ function BarberScreen() {
     await finishService.mutateAsync(activeSession.id);
   }
 
-  async function handleCancel() {
+  async function confirmCancel() {
     if (!activeSession) return;
     await cancelService.mutateAsync({ sessionId: activeSession.id });
+    setCancelConfirmOpen(false);
   }
 
   return (
@@ -133,7 +145,7 @@ function BarberScreen() {
             </p>
             <p className="font-mono text-5xl font-bold tabular-nums text-success">{elapsed}</p>
             <div className="flex w-full gap-3 pt-2">
-              <Button variant="destructive" onClick={handleCancel} className="flex-1">
+              <Button variant="destructive" onClick={() => setCancelConfirmOpen(true)} className="flex-1">
                 Cancelar
               </Button>
               <Button onClick={handleFinish} disabled={finishService.isPending} className="flex-1">
@@ -241,6 +253,22 @@ function BarberScreen() {
         }
         emptyLabel="Aun no completaste servicios este mes."
       />
+
+      <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar servicio</AlertDialogTitle>
+            <AlertDialogDescription>
+              El servicio en curso se cancelara y no se contara como completado. Esta accion no se puede
+              deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>Si, cancelar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
