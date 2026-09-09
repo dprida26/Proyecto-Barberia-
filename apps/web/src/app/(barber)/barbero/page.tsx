@@ -21,10 +21,13 @@ import {
 import { EarningsSummarySection } from "@/features/barber-session/EarningsSummarySection";
 import { useSessionStore } from "@/stores/session.store";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
+import { apiBaseUrl } from "@/lib/env";
 
 function BarberScreen() {
   const user = useSessionStore((s) => s.user);
   const clearSession = useSessionStore((s) => s.clearSession);
+  const { data: tenant } = useTenantSettings();
 
   const { data: services, isLoading: loadingServices } = useActiveServices();
   const { data: todaySessions } = useMyTodaySessions();
@@ -99,9 +102,19 @@ function BarberScreen() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 bg-muted/30 px-4 py-6">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Hola, {user?.displayName}</h1>
-          <StatusDot status={activeSession ? "IN_SERVICE" : "AVAILABLE"} />
+        <div className="flex items-center gap-3">
+          {tenant?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${apiBaseUrl}${tenant.logoUrl}`}
+              alt={tenant.name}
+              className="h-10 w-10 shrink-0 rounded-lg object-cover"
+            />
+          ) : null}
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Hola, {user?.displayName}</h1>
+            <StatusDot status={activeSession ? "IN_SERVICE" : "AVAILABLE"} />
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
