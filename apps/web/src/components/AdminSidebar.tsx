@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session.store";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -56,9 +57,12 @@ export function AdminSidebar() {
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
         <BrandHeader />
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
-          <Menu className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
       </header>
 
       {/* Mobile drawer */}
@@ -73,7 +77,11 @@ export function AdminSidebar() {
               </Button>
             </div>
             <SidebarLinks onNavigate={() => setMobileOpen(false)} />
-            <div className="border-t border-border px-3 pt-3">
+            <div className="flex flex-col gap-1 border-t border-border px-3 pt-3">
+              <div className="flex items-center justify-between px-3 py-1">
+                <span className="text-sm font-medium text-muted-foreground">Tema</span>
+                <ThemeToggle />
+              </div>
               <button
                 onClick={clearSession}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
@@ -94,9 +102,12 @@ export function AdminSidebar() {
         <SidebarLinks />
         <div className="border-t border-border px-3 pt-4">
           {user && (
-            <div className="mb-2 px-3">
-              <p className="truncate text-sm font-medium text-foreground">{user.displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <div className="mb-2 flex items-center justify-between px-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">{user.displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+              <ThemeToggle />
             </div>
           )}
           <button

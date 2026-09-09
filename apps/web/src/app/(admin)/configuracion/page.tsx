@@ -73,7 +73,7 @@ export default function ConfiguracionPage() {
           </CardTitle>
           <CardDescription>El logo se muestra en el panel administrativo.</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center gap-5">
+        <CardContent className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-5 sm:text-left">
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
             {tenant?.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -86,7 +86,7 @@ export default function ConfiguracionPage() {
               <Building2 className="h-8 w-8 text-muted-foreground" />
             )}
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col items-center gap-2 sm:items-start">
             <input
               ref={fileInputRef}
               type="file"

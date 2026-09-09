@@ -11,6 +11,7 @@ import { useLogin } from "@/features/auth/use-login";
 import { useTenantBranding } from "@/features/tenant-settings/use-tenant-settings";
 import { apiBaseUrl } from "@/lib/env";
 import { ApiError } from "@/lib/api-client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +33,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
+    <main className="relative flex min-h-screen items-center justify-center bg-muted/40 px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
           {branding?.logoUrl ? (

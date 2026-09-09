@@ -55,12 +55,12 @@ export default function ServiciosPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Servicios</h1>
           <p className="text-sm text-muted-foreground">Catalogo y precios de la barberia.</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="sm:self-auto">
           <Plus className="h-4 w-4" />
           Nuevo servicio
         </Button>
@@ -79,53 +79,93 @@ export default function ServiciosPage() {
             <p className="px-5 pb-5 text-sm text-muted-foreground">Aun no hay servicios cargados.</p>
           )}
           {!isLoading && services && services.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Duracion</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile: stacked cards */}
+              <div className="flex flex-col divide-y divide-border md:hidden">
                 {services.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell className="font-medium text-foreground">{service.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{service.category ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{service.durationEstimateMin} min</TableCell>
-                    <TableCell className="font-medium">
-                      Gs. {Number(service.currentPrice).toLocaleString("es-PY")}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={service.isActive ? "success" : "default"}>
-                        {service.isActive ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(service)}>Editar</DropdownMenuItem>
-                          <DropdownMenuItem
-                            destructive={service.isActive}
-                            onClick={() => handleToggle(service)}
-                          >
-                            {service.isActive ? "Desactivar" : "Activar"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                  <div key={service.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">{service.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {service.category ?? "Sin categoria"} · {service.durationEstimateMin} min
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground">
+                          Gs. {Number(service.currentPrice).toLocaleString("es-PY")}
+                        </span>
+                        <Badge variant={service.isActive ? "success" : "default"}>
+                          {service.isActive ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(service)}>Editar</DropdownMenuItem>
+                        <DropdownMenuItem destructive={service.isActive} onClick={() => handleToggle(service)}>
+                          {service.isActive ? "Desactivar" : "Activar"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Duracion</TableHead>
+                      <TableHead>Precio</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {services.map((service) => (
+                      <TableRow key={service.id}>
+                        <TableCell className="font-medium text-foreground">{service.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{service.category ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{service.durationEstimateMin} min</TableCell>
+                        <TableCell className="font-medium">
+                          Gs. {Number(service.currentPrice).toLocaleString("es-PY")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={service.isActive ? "success" : "default"}>
+                            {service.isActive ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(service)}>Editar</DropdownMenuItem>
+                              <DropdownMenuItem
+                                destructive={service.isActive}
+                                onClick={() => handleToggle(service)}
+                              >
+                                {service.isActive ? "Desactivar" : "Activar"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

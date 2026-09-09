@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -15,6 +16,16 @@ interface DateRangePickerProps {
 }
 
 export function DateRangePicker({ range, onRangeChange, active }: DateRangePickerProps) {
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)");
+    setIsNarrow(query.matches);
+    const listener = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    query.addEventListener("change", listener);
+    return () => query.removeEventListener("change", listener);
+  }, []);
+
   const label =
     range?.from && range?.to
       ? `${format(range.from, "d MMM yyyy", { locale: es })} - ${format(range.to, "d MMM yyyy", { locale: es })}`
@@ -23,18 +34,18 @@ export function DateRangePicker({ range, onRangeChange, active }: DateRangePicke
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant={active ? "primary" : "outline"}>
+        <Button variant={active ? "primary" : "outline"} className="w-full sm:w-auto">
           <CalendarIcon className="h-4 w-4" />
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto">
+      <PopoverContent align="start" className="w-auto max-w-[95vw] overflow-x-auto">
         <Calendar
           mode="range"
           defaultMonth={range?.from}
           selected={range}
           onSelect={onRangeChange}
-          numberOfMonths={2}
+          numberOfMonths={isNarrow ? 1 : 2}
         />
       </PopoverContent>
     </Popover>
