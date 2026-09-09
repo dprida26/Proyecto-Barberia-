@@ -5,7 +5,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { BarChart3, ChevronDown, Clock, Download, Receipt, Ticket } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import type { ReportPeriod } from "@barberops/shared";
-import { REPORT_PERIODS } from "@barberops/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -77,7 +76,7 @@ export default function ReportesPage() {
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-2 p-4">
-          {REPORT_PERIODS.filter((p) => p !== "CUSTOM").map((p) => (
+          {(["TODAY", "YESTERDAY", "THIS_WEEK"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
