@@ -21,7 +21,7 @@ services:
         value: America/Asuncion
       - key: DATABASE_URL
         fromDatabase:
-          relationalDb: titi-barberia-db
+          name: titi-barberia-db
           property: connectionString
       # URL publica del servicio web (fija, ver nota en README de deploy).
       - key: CORS_ORIGIN
