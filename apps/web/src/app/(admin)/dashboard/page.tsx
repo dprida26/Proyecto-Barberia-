@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, CalendarCheck, CircleDot, LayoutDashboard, ListChecks } from "lucide-react";
+import { Banknote, LayoutDashboard, ListChecks } from "lucide-react";
 import { useDashboardLive } from "@/features/dashboard/use-dashboard-live";
 import { BarberLiveCard } from "@/components/dashboard/BarberLiveCard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
@@ -36,11 +36,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         <KpiCard label="Servicios hoy" value={data.kpis.servicesToday} icon={ListChecks} />
-        <KpiCard label="En curso" value={data.kpis.servicesInProgress} icon={CircleDot} accent="success" />
-        <KpiCard label="Activos" value={data.kpis.barbersActive} icon={CalendarCheck} accent="success" />
-        <KpiCard label="Disponibles" value={data.kpis.barbersAvailable} icon={CalendarCheck} />
         <KpiCard
           label="Facturacion hoy"
           value={`Gs. ${Number(data.kpis.revenueToday).toLocaleString("es-PY")}`}

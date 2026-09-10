@@ -42,6 +42,11 @@ export interface BarberSummary {
   currentStatus: BarberStatus;
   commissionPercent: string;
   activeSession: ActiveServiceSession | null;
+  todayProduction: {
+    servicesCount: number;
+    barberEarning: string;
+    businessEarning: string;
+  };
 }
 
 export interface ServiceSessionItemRecord {
