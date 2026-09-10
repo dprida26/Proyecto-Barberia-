@@ -1,5 +1,6 @@
 import { apiBaseUrl } from "./env";
 import { useSessionStore } from "@/stores/session.store";
+import { trackServerDate } from "./server-clock";
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -32,6 +33,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers,
     credentials: "include",
   });
+
+  trackServerDate(response.headers.get("Date"));
 
   if (!response.ok) {
     let code = "UNKNOWN_ERROR";

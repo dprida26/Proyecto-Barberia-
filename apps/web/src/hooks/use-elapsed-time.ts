@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { serverNow } from "@/lib/server-clock";
 
 export function useElapsedTime(startedAt: string | null) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -12,7 +13,7 @@ export function useElapsedTime(startedAt: string | null) {
     const start = new Date(startedAt).getTime();
 
     function tick() {
-      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+      setElapsedSeconds(Math.max(0, Math.floor((serverNow() - start) / 1000)));
     }
 
     tick();
