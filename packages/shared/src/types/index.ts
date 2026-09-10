@@ -113,6 +113,14 @@ export interface ReportSummary {
       servicesCount: number;
       revenue: string;
     }>;
+    cashTotal: string;
+    transferTotal: string;
+    transfers: Array<{
+      sessionId: string;
+      clientName: string;
+      amount: string;
+      startedAt: string;
+    }>;
   }>;
   byService: Array<{
     serviceId: string;

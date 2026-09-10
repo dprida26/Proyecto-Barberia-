@@ -20,6 +20,15 @@ function formatGs(value: string | number) {
   return `Gs. ${Number(value).toLocaleString("es-PY")}`;
 }
 
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const CHART_COLOR = "hsl(221 83% 53%)";
 
 export default function ReportesPage() {
@@ -200,6 +209,38 @@ export default function ReportesPage() {
                               ))}
                             </div>
                           ) : null}
+
+                          <div className="flex flex-col gap-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">Formas de pago</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="rounded-lg border px-3 py-2">
+                                <p className="text-xs text-muted-foreground">Efectivo</p>
+                                <p className="font-semibold">{formatGs(barber.cashTotal)}</p>
+                              </div>
+                              <div className="rounded-lg border px-3 py-2">
+                                <p className="text-xs text-muted-foreground">Transferencia</p>
+                                <p className="font-semibold">{formatGs(barber.transferTotal)}</p>
+                              </div>
+                            </div>
+                            {barber.transfers.length > 0 ? (
+                              <div className="flex flex-col gap-1.5">
+                                {barber.transfers.map((transfer) => (
+                                  <div
+                                    key={transfer.sessionId}
+                                    className="flex items-center justify-between rounded-lg border px-3 py-2"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{transfer.clientName || "Sin nombre"}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatDateTime(transfer.startedAt)}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm font-semibold">{formatGs(transfer.amount)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
                         </CardContent>
                       </CollapsibleContent>
                     </Collapsible>

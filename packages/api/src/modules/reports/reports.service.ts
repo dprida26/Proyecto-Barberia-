@@ -31,11 +31,14 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     prisma.serviceSession.findMany({
       where,
       select: {
+        id: true,
         barberId: true,
         totalPrice: true,
         commissionPercentAtCompletion: true,
         durationSeconds: true,
         startedAt: true,
+        paymentMethod: true,
+        clientNameFree: true,
         barber: { select: { displayName: true } },
         items: { include: { service: { select: { name: true } } } },
       },
@@ -52,6 +55,9 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       barberEarning: number;
       businessEarning: number;
       services: Map<string, { serviceName: string; servicesCount: number; revenue: number }>;
+      cashTotal: number;
+      transferTotal: number;
+      transfers: Array<{ sessionId: string; clientName: string; amount: number; startedAt: Date }>;
     }
   >();
   const byServiceMap = new Map<string, { serviceName: string; servicesCount: number; revenue: number }>();
@@ -76,12 +82,26 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       barberEarning: 0,
       businessEarning: 0,
       services: new Map<string, { serviceName: string; servicesCount: number; revenue: number }>(),
+      cashTotal: 0,
+      transferTotal: 0,
+      transfers: [],
     };
     barberEntry.servicesCount += 1;
     barberEntry.revenue += price;
     barberEntry.totalDuration += duration;
     barberEntry.barberEarning += barberEarning;
     barberEntry.businessEarning += businessEarning;
+    if (session.paymentMethod === "TRANSFER") {
+      barberEntry.transferTotal += price;
+      barberEntry.transfers.push({
+        sessionId: session.id,
+        clientName: session.clientNameFree ?? "",
+        amount: price,
+        startedAt: session.startedAt,
+      });
+    } else {
+      barberEntry.cashTotal += price;
+    }
     byBarberMap.set(session.barberId, barberEntry);
 
     for (const item of session.items) {
@@ -125,6 +145,16 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         revenue: s.revenue.toFixed(2),
       }))
       .sort((a, b) => b.servicesCount - a.servicesCount),
+    cashTotal: v.cashTotal.toFixed(2),
+    transferTotal: v.transferTotal.toFixed(2),
+    transfers: v.transfers
+      .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
+      .map((t) => ({
+        sessionId: t.sessionId,
+        clientName: t.clientName,
+        amount: t.amount.toFixed(2),
+        startedAt: t.startedAt.toISOString(),
+      })),
   }));
 
   const byService = Array.from(byServiceMap.entries()).map(([serviceId, v]) => ({
