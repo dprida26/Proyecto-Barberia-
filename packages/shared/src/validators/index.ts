@@ -13,12 +13,32 @@ export const createServiceCatalogSchema = z.object({
   category: z.string().max(60).optional(),
   durationEstimateMin: z.number().int().min(1).max(600),
   currentPrice: z.number().nonnegative(),
+  wednesdayPrice: z.number().nonnegative().nullable().optional(),
   isActive: z.boolean().default(true),
 });
 export type CreateServiceCatalogInput = z.infer<typeof createServiceCatalogSchema>;
 
 export const updateServiceCatalogSchema = createServiceCatalogSchema.partial();
 export type UpdateServiceCatalogInput = z.infer<typeof updateServiceCatalogSchema>;
+
+export const commissionOverrideSchema = z.object({
+  barberId: z.string().uuid(),
+  commissionPercent: z.number().min(0).max(100),
+});
+export type CommissionOverrideInput = z.infer<typeof commissionOverrideSchema>;
+
+export const setCommissionOverridesSchema = z
+  .object({
+    overrides: z.array(commissionOverrideSchema).max(200),
+  })
+  .refine(
+    (data) => new Set(data.overrides.map((o) => o.barberId)).size === data.overrides.length,
+    {
+      message: "No se puede repetir el mismo barbero en las excepciones de comision",
+      path: ["overrides"],
+    },
+  );
+export type SetCommissionOverridesInput = z.infer<typeof setCommissionOverridesSchema>;
 
 export const createBarberSchema = z.object({
   email: z.string().email(),

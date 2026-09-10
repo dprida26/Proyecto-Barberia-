@@ -20,6 +20,7 @@ import {
 import { StatusDot } from "@/components/barber/StatusDot";
 import { cn } from "@/lib/utils";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { resolveEffectivePrice } from "@barberops/shared";
 import {
   useActiveServices,
   useCancelService,
@@ -65,7 +66,18 @@ function BarberScreen() {
     () =>
       (services ?? [])
         .filter((s) => selectedServiceIds.includes(s.id))
-        .reduce((sum, s) => sum + Number(s.currentPrice), 0),
+        .reduce(
+          (sum, s) =>
+            sum +
+            resolveEffectivePrice(
+              {
+                currentPrice: Number(s.currentPrice),
+                wednesdayPrice: s.wednesdayPrice ? Number(s.wednesdayPrice) : null,
+              },
+              new Date(),
+            ),
+          0,
+        ),
     [services, selectedServiceIds],
   );
 

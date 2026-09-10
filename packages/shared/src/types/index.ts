@@ -31,7 +31,16 @@ export interface ServiceCatalogItem {
   category: string | null;
   durationEstimateMin: number;
   currentPrice: string;
+  wednesdayPrice: string | null;
   isActive: boolean;
+}
+
+export interface BarberServiceCommissionOverride {
+  id: string;
+  barberId: string;
+  barberName: string;
+  serviceId: string;
+  commissionPercent: string;
 }
 
 export interface BarberSummary {
@@ -117,6 +126,8 @@ export interface ReportSummary {
       serviceName: string;
       servicesCount: number;
       revenue: string;
+      barberEarning: string;
+      businessEarning: string;
     }>;
     cashTotal: string;
     transferTotal: string;

@@ -2,7 +2,7 @@ import { prisma } from "../../database/client";
 import { ConflictError, NotFoundError } from "../../common/errors";
 import { recordAudit } from "../audit/audit.service";
 import { emitToTenant } from "../../websockets/io";
-import { SOCKET_EVENTS, computeEarnings } from "@barberops/shared";
+import { SOCKET_EVENTS, computeEarnings, resolveEffectivePrice } from "@barberops/shared";
 import type { CancelServiceSessionInput, StartServiceSessionInput } from "@barberops/shared";
 
 export async function startServiceSession(
@@ -20,7 +20,25 @@ export async function startServiceSession(
     throw new NotFoundError("Uno o mas servicios no fueron encontrados o estan inactivos");
   }
 
-  const totalPrice = services.reduce((sum, s) => sum + Number(s.currentPrice), 0);
+  const overrides = await prisma.barberServiceCommission.findMany({
+    where: { barberId: barber.id, serviceId: { in: services.map((s) => s.id) } },
+  });
+  const overrideMap = new Map(overrides.map((o) => [o.serviceId, Number(o.commissionPercent)]));
+
+  const now = new Date();
+  const resolvedItems = services.map((s) => ({
+    service: s,
+    effectivePrice: resolveEffectivePrice(
+      {
+        currentPrice: Number(s.currentPrice),
+        wednesdayPrice: s.wednesdayPrice ? Number(s.wednesdayPrice) : null,
+      },
+      now,
+    ),
+    effectiveCommissionPercent: overrideMap.get(s.id) ?? Number(barber.commissionPercent),
+  }));
+
+  const totalPrice = resolvedItems.reduce((sum, r) => sum + r.effectivePrice, 0);
 
   const session = await prisma.$transaction(async (tx) => {
     const activeSession = await tx.serviceSession.findFirst({
@@ -39,7 +57,11 @@ export async function startServiceSession(
         totalPrice,
         status: "IN_SERVICE",
         items: {
-          create: services.map((s) => ({ serviceId: s.id, priceAtStart: s.currentPrice })),
+          create: resolvedItems.map((r) => ({
+            serviceId: r.service.id,
+            priceAtStart: r.effectivePrice,
+            commissionPercent: r.effectiveCommissionPercent,
+          })),
         },
       },
     });
@@ -77,13 +99,12 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
 
   const session = await prisma.serviceSession.findFirst({
     where: { id: sessionId, tenantId, barberId: barber.id, status: "IN_SERVICE" },
+    include: { items: true },
   });
   if (!session) throw new NotFoundError("Sesion de servicio activa no encontrada");
 
   const endedAt = new Date();
   const durationSeconds = Math.round((endedAt.getTime() - session.startedAt.getTime()) / 1000);
-
-  const commissionPercent = barber.commissionPercent;
 
   const updated = await prisma.$transaction(async (tx) => {
     const finished = await tx.serviceSession.update({
@@ -92,7 +113,9 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
         status: "COMPLETED",
         endedAt,
         durationSeconds,
-        commissionPercentAtCompletion: commissionPercent,
+        // metadata legado: comision general del barbero al finalizar, ya no
+        // alimenta el calculo de ganancias (eso se hace por item, ver abajo)
+        commissionPercentAtCompletion: barber.commissionPercent,
       },
     });
     await tx.barber.update({ where: { id: barber.id }, data: { currentStatus: "AVAILABLE" } });
@@ -108,10 +131,17 @@ export async function finishServiceSession(tenantId: string, sessionId: string, 
     metadata: { durationSeconds },
   });
 
-  const { barberEarning, businessEarning } = computeEarnings(
-    Number(session.totalPrice),
-    Number(commissionPercent),
+  const totals = session.items.reduce(
+    (acc, item) => {
+      const e = computeEarnings(Number(item.priceAtStart), Number(item.commissionPercent));
+      return {
+        barberEarning: acc.barberEarning + e.barberEarning,
+        businessEarning: acc.businessEarning + e.businessEarning,
+      };
+    },
+    { barberEarning: 0, businessEarning: 0 },
   );
+  const { barberEarning, businessEarning } = totals;
 
   emitToTenant(tenantId, SOCKET_EVENTS.SERVICE_FINISHED, {
     sessionId,
@@ -178,9 +208,19 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
   });
 
   return sessions.map(({ items, ...session }) => {
-    const earnings = session.commissionPercentAtCompletion
-      ? computeEarnings(Number(session.totalPrice), Number(session.commissionPercentAtCompletion))
-      : null;
+    const totals =
+      session.status === "COMPLETED"
+        ? items.reduce(
+            (acc, item) => {
+              const e = computeEarnings(Number(item.priceAtStart), Number(item.commissionPercent));
+              return {
+                barberEarning: acc.barberEarning + e.barberEarning,
+                businessEarning: acc.businessEarning + e.businessEarning,
+              };
+            },
+            { barberEarning: 0, businessEarning: 0 },
+          )
+        : null;
     return {
       ...session,
       services: items.map((item) => ({
@@ -188,8 +228,8 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
         serviceName: item.service.name,
         priceAtStart: item.priceAtStart.toFixed(2),
       })),
-      barberEarning: earnings ? earnings.barberEarning.toFixed(2) : null,
-      businessEarning: earnings ? earnings.businessEarning.toFixed(2) : null,
+      barberEarning: totals ? totals.barberEarning.toFixed(2) : null,
+      businessEarning: totals ? totals.businessEarning.toFixed(2) : null,
     };
   });
 }
@@ -222,16 +262,14 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
   let totalBusinessEarning = 0;
 
   for (const session of sessions) {
-    const totalPrice = Number(session.totalPrice);
-    const commissionPercent = Number(session.commissionPercentAtCompletion ?? 0);
-    const { barberEarning, businessEarning } = computeEarnings(totalPrice, commissionPercent);
-    totalRevenue += totalPrice;
-    totalBarberEarning += barberEarning;
-    totalBusinessEarning += businessEarning;
-
     for (const item of session.items) {
       const itemPrice = Number(item.priceAtStart);
-      const itemEarnings = computeEarnings(itemPrice, commissionPercent);
+      const itemCommissionPercent = Number(item.commissionPercent);
+      const itemEarnings = computeEarnings(itemPrice, itemCommissionPercent);
+
+      totalRevenue += itemPrice;
+      totalBarberEarning += itemEarnings.barberEarning;
+      totalBusinessEarning += itemEarnings.businessEarning;
 
       const entry = byServiceMap.get(item.serviceId) ?? {
         serviceName: item.service.name,

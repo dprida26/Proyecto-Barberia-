@@ -1,7 +1,17 @@
 import type { FastifyInstance } from "fastify";
-import { createServiceCatalogSchema, updateServiceCatalogSchema } from "@barberops/shared";
+import {
+  createServiceCatalogSchema,
+  updateServiceCatalogSchema,
+  setCommissionOverridesSchema,
+} from "@barberops/shared";
 import { authGuard, roleGuard } from "../../common/guards";
-import { createService, listServices, updateService } from "./services.service";
+import {
+  createService,
+  listCommissionOverrides,
+  listServices,
+  setCommissionOverrides,
+  updateService,
+} from "./services.service";
 
 export async function servicesRoutes(app: FastifyInstance) {
   app.get("/services", { preHandler: [authGuard] }, async (request) => {
@@ -22,4 +32,30 @@ export async function servicesRoutes(app: FastifyInstance) {
     const service = await updateService(request.user.tenantId, id, body, request.user.sub);
     return { data: service };
   });
+
+  app.get(
+    "/services/:id/commission-overrides",
+    { preHandler: [authGuard, roleGuard(["ADMIN"])] },
+    async (request) => {
+      const { id } = request.params as { id: string };
+      const overrides = await listCommissionOverrides(request.user.tenantId, id);
+      return { data: overrides };
+    },
+  );
+
+  app.put(
+    "/services/:id/commission-overrides",
+    { preHandler: [authGuard, roleGuard(["ADMIN"])] },
+    async (request) => {
+      const { id } = request.params as { id: string };
+      const body = setCommissionOverridesSchema.parse(request.body);
+      const overrides = await setCommissionOverrides(
+        request.user.tenantId,
+        id,
+        body.overrides,
+        request.user.sub,
+      );
+      return { data: overrides };
+    },
+  );
 }

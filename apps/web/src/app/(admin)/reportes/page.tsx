@@ -204,7 +204,12 @@ export default function ReportesPage() {
                                     {service.serviceName}{" "}
                                     <span className="text-muted-foreground">x{service.servicesCount}</span>
                                   </span>
-                                  <span className="text-sm font-semibold">{formatGs(service.revenue)}</span>
+                                  <span className="flex flex-col items-end">
+                                    <span className="text-sm font-semibold">{formatGs(service.revenue)}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      ganancia {formatGs(service.barberEarning)}
+                                    </span>
+                                  </span>
                                 </div>
                               ))}
                             </div>

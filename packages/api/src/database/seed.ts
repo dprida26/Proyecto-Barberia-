@@ -139,7 +139,11 @@ async function main() {
             endedAt,
             durationSeconds,
             items: {
-              create: chosenServices.map((s) => ({ serviceId: s.id, priceAtStart: s.currentPrice })),
+              create: chosenServices.map((s) => ({
+                serviceId: s.id,
+                priceAtStart: s.currentPrice,
+                commissionPercent: barber.commissionPercent,
+              })),
             },
           },
         });

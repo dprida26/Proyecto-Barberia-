@@ -38,6 +38,8 @@ enum AuditAction {
   SERVICE_CATALOG_CREATED
   SERVICE_CATALOG_UPDATED
   SERVICE_PRICE_CHANGED
+  SERVICE_COMMISSION_OVERRIDE_SET
+  SERVICE_COMMISSION_OVERRIDE_REMOVED
   BARBER_CREATED
   BARBER_UPDATED
   BARBER_DEACTIVATED
@@ -58,10 +60,11 @@ model Tenant {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
 
-  users           User[]
-  services        ServiceCatalog[]
-  serviceSessions ServiceSession[]
-  auditLogs       AuditLog[]
+  users                    User[]
+  services                 ServiceCatalog[]
+  serviceSessions          ServiceSession[]
+  auditLogs                AuditLog[]
+  barberServiceCommissions BarberServiceCommission[]
 
   @@map("tenants")
 }
@@ -95,8 +98,9 @@ model Barber {
   commissionPercent Decimal      @default(50.00) @db.Decimal(5, 2)
   createdAt         DateTime     @default(now()) @db.Timestamptz(3)
 
-  user            User              @relation(fields: [userId], references: [id])
-  serviceSessions ServiceSession[]
+  user             User                       @relation(fields: [userId], references: [id])
+  serviceSessions  ServiceSession[]
+  serviceCommissions BarberServiceCommission[]
 
   @@index([tenantId])
   @@map("barbers")
@@ -110,12 +114,14 @@ model ServiceCatalog {
   category             String?
   durationEstimateMin  Int
   currentPrice         Decimal  @db.Decimal(10, 2)
+  wednesdayPrice       Decimal? @db.Decimal(10, 2)
   isActive             Boolean  @default(true)
   createdAt            DateTime @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime @updatedAt @db.Timestamptz(3)
 
-  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  tenant              Tenant                     @relation(fields: [tenantId], references: [id])
   serviceSessionItems ServiceSessionItem[]
+  commissionOverrides BarberServiceCommission[]
 
   @@index([tenantId])
   @@map("service_catalog")
@@ -148,17 +154,37 @@ model ServiceSession {
 }
 
 model ServiceSessionItem {
-  id           String   @id @default(uuid())
-  sessionId    String
-  serviceId    String
-  priceAtStart Decimal  @db.Decimal(10, 2)
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  id                String   @id @default(uuid())
+  sessionId         String
+  serviceId         String
+  priceAtStart      Decimal  @db.Decimal(10, 2)
+  commissionPercent Decimal  @db.Decimal(5, 2)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
 
   session ServiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   service ServiceCatalog @relation(fields: [serviceId], references: [id])
 
   @@index([sessionId])
   @@map("service_session_items")
+}
+
+model BarberServiceCommission {
+  id                String   @id @default(uuid())
+  tenantId          String
+  barberId          String
+  serviceId         String
+  commissionPercent Decimal  @db.Decimal(5, 2)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  barber  Barber         @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service ServiceCatalog @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, serviceId])
+  @@index([tenantId])
+  @@index([serviceId])
+  @@map("barber_service_commissions")
 }
 
 model AuditLog {

@@ -34,7 +34,6 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         id: true,
         barberId: true,
         totalPrice: true,
-        commissionPercentAtCompletion: true,
         durationSeconds: true,
         startedAt: true,
         paymentMethod: true,
@@ -54,7 +53,16 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       totalDuration: number;
       barberEarning: number;
       businessEarning: number;
-      services: Map<string, { serviceName: string; servicesCount: number; revenue: number }>;
+      services: Map<
+        string,
+        {
+          serviceName: string;
+          servicesCount: number;
+          revenue: number;
+          barberEarning: number;
+          businessEarning: number;
+        }
+      >;
       cashTotal: number;
       transferTotal: number;
       transfers: Array<{ sessionId: string; clientName: string; amount: number; startedAt: Date }>;
@@ -69,10 +77,6 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
   for (const session of sessions) {
     const price = Number(session.totalPrice);
     const duration = session.durationSeconds ?? 0;
-    const commissionPercent = Number(session.commissionPercentAtCompletion ?? 0);
-    const { barberEarning, businessEarning } = computeEarnings(price, commissionPercent);
-    totalBarberEarning += barberEarning;
-    totalBusinessEarning += businessEarning;
 
     const barberEntry = byBarberMap.get(session.barberId) ?? {
       barberName: session.barber.displayName,
@@ -81,7 +85,16 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       totalDuration: 0,
       barberEarning: 0,
       businessEarning: 0,
-      services: new Map<string, { serviceName: string; servicesCount: number; revenue: number }>(),
+      services: new Map<
+        string,
+        {
+          serviceName: string;
+          servicesCount: number;
+          revenue: number;
+          barberEarning: number;
+          businessEarning: number;
+        }
+      >(),
       cashTotal: 0,
       transferTotal: 0,
       transfers: [],
@@ -89,8 +102,6 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     barberEntry.servicesCount += 1;
     barberEntry.revenue += price;
     barberEntry.totalDuration += duration;
-    barberEntry.barberEarning += barberEarning;
-    barberEntry.businessEarning += businessEarning;
     if (session.paymentMethod === "TRANSFER") {
       barberEntry.transferTotal += price;
       barberEntry.transfers.push({
@@ -102,10 +113,18 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     } else {
       barberEntry.cashTotal += price;
     }
-    byBarberMap.set(session.barberId, barberEntry);
 
     for (const item of session.items) {
       const itemPrice = Number(item.priceAtStart);
+      const { barberEarning: itemBarberEarning, businessEarning: itemBusinessEarning } = computeEarnings(
+        itemPrice,
+        Number(item.commissionPercent),
+      );
+      totalBarberEarning += itemBarberEarning;
+      totalBusinessEarning += itemBusinessEarning;
+      barberEntry.barberEarning += itemBarberEarning;
+      barberEntry.businessEarning += itemBusinessEarning;
+
       const serviceEntry = byServiceMap.get(item.serviceId) ?? {
         serviceName: item.service.name,
         servicesCount: 0,
@@ -119,11 +138,17 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         serviceName: item.service.name,
         servicesCount: 0,
         revenue: 0,
+        barberEarning: 0,
+        businessEarning: 0,
       };
       barberServiceEntry.servicesCount += 1;
       barberServiceEntry.revenue += itemPrice;
+      barberServiceEntry.barberEarning += itemBarberEarning;
+      barberServiceEntry.businessEarning += itemBusinessEarning;
       barberEntry.services.set(item.serviceId, barberServiceEntry);
     }
+
+    byBarberMap.set(session.barberId, barberEntry);
 
     const hour = session.startedAt.getHours();
     byHourMap.set(hour, (byHourMap.get(hour) ?? 0) + 1);
@@ -143,6 +168,8 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         serviceName: s.serviceName,
         servicesCount: s.servicesCount,
         revenue: s.revenue.toFixed(2),
+        barberEarning: s.barberEarning.toFixed(2),
+        businessEarning: s.businessEarning.toFixed(2),
       }))
       .sort((a, b) => b.servicesCount - a.servicesCount),
     cashTotal: v.cashTotal.toFixed(2),
