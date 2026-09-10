@@ -23,7 +23,7 @@ export function buildApp() {
   });
 
   app.register(helmet, { crossOriginResourcePolicy: { policy: "cross-origin" } });
-  app.register(cors, { origin: env.corsOrigin, credentials: true });
+  app.register(cors, { origin: env.corsOrigin, credentials: true, exposedHeaders: ["Date"] });
   app.register(cookie);
   app.register(jwt, { secret: env.jwtSecret });
   app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
