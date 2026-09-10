@@ -172,15 +172,34 @@ export default function ReportesPage() {
                         </CardHeader>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <CardContent className="grid grid-cols-2 gap-2 pt-0">
-                          <div className="rounded-lg bg-success/10 px-3 py-2">
-                            <p className="text-xs text-muted-foreground">Para el barbero</p>
-                            <p className="font-semibold text-success">{formatGs(barber.barberEarning)}</p>
+                        <CardContent className="flex flex-col gap-3 pt-0">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-lg bg-success/10 px-3 py-2">
+                              <p className="text-xs text-muted-foreground">Para el barbero</p>
+                              <p className="font-semibold text-success">{formatGs(barber.barberEarning)}</p>
+                            </div>
+                            <div className="rounded-lg bg-muted/50 px-3 py-2">
+                              <p className="text-xs text-muted-foreground">Para la barberia</p>
+                              <p className="font-semibold text-foreground">{formatGs(barber.businessEarning)}</p>
+                            </div>
                           </div>
-                          <div className="rounded-lg bg-muted/50 px-3 py-2">
-                            <p className="text-xs text-muted-foreground">Para la barberia</p>
-                            <p className="font-semibold text-foreground">{formatGs(barber.businessEarning)}</p>
-                          </div>
+                          {barber.services.length > 0 ? (
+                            <div className="flex flex-col gap-1.5">
+                              <p className="text-xs font-medium text-muted-foreground">Servicios realizados</p>
+                              {barber.services.map((service) => (
+                                <div
+                                  key={service.serviceId}
+                                  className="flex items-center justify-between rounded-lg border px-3 py-2"
+                                >
+                                  <span className="text-sm">
+                                    {service.serviceName}{" "}
+                                    <span className="text-muted-foreground">x{service.servicesCount}</span>
+                                  </span>
+                                  <span className="text-sm font-semibold">{formatGs(service.revenue)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </CardContent>
                       </CollapsibleContent>
                     </Collapsible>

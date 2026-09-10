@@ -51,6 +51,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       totalDuration: number;
       barberEarning: number;
       businessEarning: number;
+      services: Map<string, { serviceName: string; servicesCount: number; revenue: number }>;
     }
   >();
   const byServiceMap = new Map<string, { serviceName: string; servicesCount: number; revenue: number }>();
@@ -74,6 +75,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       totalDuration: 0,
       barberEarning: 0,
       businessEarning: 0,
+      services: new Map<string, { serviceName: string; servicesCount: number; revenue: number }>(),
     };
     barberEntry.servicesCount += 1;
     barberEntry.revenue += price;
@@ -92,6 +94,15 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       serviceEntry.servicesCount += 1;
       serviceEntry.revenue += itemPrice;
       byServiceMap.set(item.serviceId, serviceEntry);
+
+      const barberServiceEntry = barberEntry.services.get(item.serviceId) ?? {
+        serviceName: item.service.name,
+        servicesCount: 0,
+        revenue: 0,
+      };
+      barberServiceEntry.servicesCount += 1;
+      barberServiceEntry.revenue += itemPrice;
+      barberEntry.services.set(item.serviceId, barberServiceEntry);
     }
 
     const hour = session.startedAt.getHours();
@@ -106,6 +117,14 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     avgDurationSeconds: v.servicesCount ? Math.round(v.totalDuration / v.servicesCount) : 0,
     barberEarning: v.barberEarning.toFixed(2),
     businessEarning: v.businessEarning.toFixed(2),
+    services: Array.from(v.services.entries())
+      .map(([serviceId, s]) => ({
+        serviceId,
+        serviceName: s.serviceName,
+        servicesCount: s.servicesCount,
+        revenue: s.revenue.toFixed(2),
+      }))
+      .sort((a, b) => b.servicesCount - a.servicesCount),
   }));
 
   const byService = Array.from(byServiceMap.entries()).map(([serviceId, v]) => ({

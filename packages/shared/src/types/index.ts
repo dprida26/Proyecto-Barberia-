@@ -107,6 +107,12 @@ export interface ReportSummary {
     avgDurationSeconds: number;
     barberEarning: string;
     businessEarning: string;
+    services: Array<{
+      serviceId: string;
+      serviceName: string;
+      servicesCount: number;
+      revenue: string;
+    }>;
   }>;
   byService: Array<{
     serviceId: string;
