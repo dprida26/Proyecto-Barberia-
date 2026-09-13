@@ -17,6 +17,7 @@ export const env = {
   accessTokenTtl: "15m",
   refreshTokenTtl: "7d",
   uploadsDir: process.env.UPLOADS_DIR ?? path.join(process.cwd(), "uploads"),
+  enableAdminReset: process.env.ENABLE_ADMIN_RESET === "true",
   r2: {
     accountId: process.env.R2_ACCOUNT_ID,
     accessKeyId: process.env.R2_ACCESS_KEY_ID,

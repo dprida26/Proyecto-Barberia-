@@ -16,6 +16,7 @@ import { dashboardRoutes } from "./modules/dashboard/dashboard.routes";
 import { reportsRoutes } from "./modules/reports/reports.routes";
 import { auditRoutes } from "./modules/audit/audit.routes";
 import { tenantRoutes } from "./modules/tenant/tenant.routes";
+import { adminRoutes } from "./modules/admin/admin.routes";
 
 export function buildApp() {
   const app = Fastify({
@@ -42,6 +43,7 @@ export function buildApp() {
       await v1.register(reportsRoutes);
       await v1.register(auditRoutes);
       await v1.register(tenantRoutes);
+      await v1.register(adminRoutes);
     },
     { prefix: "/api/v1" },
   );
