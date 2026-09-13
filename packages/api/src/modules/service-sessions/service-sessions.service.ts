@@ -241,9 +241,8 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
   const from = new Date();
   from.setHours(0, 0, 0, 0);
   if (period === "week") {
-    const day = from.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    from.setDate(from.getDate() - diff);
+    // Corte semanal domingo-sabado, igual criterio que Reportes (ver period.ts en el frontend).
+    from.setDate(from.getDate() - from.getDay());
   } else {
     from.setDate(1);
   }
