@@ -17,14 +17,15 @@ export async function getLiveSnapshot(tenantId: string) {
     orderBy: { displayName: "asc" },
   });
 
-  const [servicesToday, servicesInProgress, completedTodaySessions] = await Promise.all([
-    prisma.serviceSession.count({
-      where: { tenantId, status: "COMPLETED", startedAt: { gte: startOfDay } },
-    }),
+  const [servicesInProgress, completedTodaySessions] = await Promise.all([
     prisma.serviceSession.count({ where: { tenantId, status: "IN_SERVICE" } }),
     prisma.serviceSession.findMany({
       where: { tenantId, status: "COMPLETED", startedAt: { gte: startOfDay } },
-      select: { barberId: true, totalPrice: true, commissionPercentAtCompletion: true },
+      select: {
+        barberId: true,
+        totalPrice: true,
+        items: { select: { priceAtStart: true, commissionPercent: true } },
+      },
     }),
   ]);
 
@@ -37,19 +38,25 @@ export async function getLiveSnapshot(tenantId: string) {
   for (const session of completedTodaySessions) {
     const price = Number(session.totalPrice);
     revenueToday += price;
-    const { barberEarning, businessEarning } = computeEarnings(price, Number(session.commissionPercentAtCompletion ?? 0));
-    businessEarningToday += businessEarning;
 
     const entry = productionByBarber.get(session.barberId) ?? {
       servicesCount: 0,
       barberEarning: 0,
       businessEarning: 0,
     };
-    entry.servicesCount += 1;
-    entry.barberEarning += barberEarning;
-    entry.businessEarning += businessEarning;
+    for (const item of session.items) {
+      const { barberEarning, businessEarning } = computeEarnings(
+        Number(item.priceAtStart),
+        Number(item.commissionPercent),
+      );
+      entry.servicesCount += 1;
+      entry.barberEarning += barberEarning;
+      entry.businessEarning += businessEarning;
+      businessEarningToday += businessEarning;
+    }
     productionByBarber.set(session.barberId, entry);
   }
+  const servicesToday = Array.from(productionByBarber.values()).reduce((sum, e) => sum + e.servicesCount, 0);
 
   return {
     barbers: barbers.map((b) => ({

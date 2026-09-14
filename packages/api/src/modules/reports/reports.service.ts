@@ -99,7 +99,6 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
       transferTotal: 0,
       transfers: [],
     };
-    barberEntry.servicesCount += 1;
     barberEntry.revenue += price;
     barberEntry.totalDuration += duration;
     if (session.paymentMethod === "TRANSFER") {
@@ -115,6 +114,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     }
 
     for (const item of session.items) {
+      barberEntry.servicesCount += 1;
       const itemPrice = Number(item.priceAtStart);
       const { barberEarning: itemBarberEarning, businessEarning: itemBusinessEarning } = computeEarnings(
         itemPrice,
@@ -199,7 +199,8 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
   const topBarberByServices = [...byBarber].sort((a, b) => b.servicesCount - a.servicesCount)[0] ?? null;
   const topBarberByRevenue = [...byBarber].sort((a, b) => Number(b.revenue) - Number(a.revenue))[0] ?? null;
 
-  const servicesCount = totals._count._all;
+  const sessionsCount = totals._count._all;
+  const servicesCount = byService.reduce((sum, s) => sum + s.servicesCount, 0);
   const revenue = Number(totals._sum.totalPrice ?? 0);
 
   return {
@@ -207,7 +208,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
     totals: {
       servicesCount,
       revenue: revenue.toFixed(2),
-      avgTicket: servicesCount ? (revenue / servicesCount).toFixed(2) : "0.00",
+      avgTicket: sessionsCount ? (revenue / sessionsCount).toFixed(2) : "0.00",
       avgDurationSeconds: Math.round(totals._avg.durationSeconds ?? 0),
       barberEarning: totalBarberEarning.toFixed(2),
       businessEarning: totalBusinessEarning.toFixed(2),
