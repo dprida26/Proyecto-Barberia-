@@ -24,6 +24,7 @@ enum ServiceSessionStatus {
   IN_SERVICE
   COMPLETED
   CANCELLED
+  DELETED
 }
 
 enum PaymentMethod {
@@ -35,6 +36,8 @@ enum AuditAction {
   SERVICE_STARTED
   SERVICE_FINISHED
   SERVICE_CANCELLED
+  SERVICE_DELETED
+  SERVICE_ITEM_DELETED
   SERVICE_CATALOG_CREATED
   SERVICE_CATALOG_UPDATED
   SERVICE_PRICE_CHANGED
@@ -154,12 +157,15 @@ model ServiceSession {
 }
 
 model ServiceSessionItem {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   sessionId         String
   serviceId         String
-  priceAtStart      Decimal  @db.Decimal(10, 2)
-  commissionPercent Decimal  @db.Decimal(5, 2)
-  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  priceAtStart      Decimal   @db.Decimal(10, 2)
+  commissionPercent Decimal   @db.Decimal(5, 2)
+  deleteReason      String?
+  deletedAt         DateTime? @db.Timestamptz(3)
+  deletedByUserId   String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
 
   session ServiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   service ServiceCatalog @relation(fields: [serviceId], references: [id])

@@ -3,7 +3,11 @@ import { ConflictError, NotFoundError } from "../../common/errors";
 import { recordAudit } from "../audit/audit.service";
 import { emitToTenant } from "../../websockets/io";
 import { SOCKET_EVENTS, computeEarnings, resolveEffectivePrice } from "@barberops/shared";
-import type { CancelServiceSessionInput, StartServiceSessionInput } from "@barberops/shared";
+import type {
+  CancelServiceSessionInput,
+  DeleteServiceSessionItemInput,
+  StartServiceSessionInput,
+} from "@barberops/shared";
 
 export async function startServiceSession(
   tenantId: string,
@@ -194,6 +198,61 @@ export async function cancelServiceSession(
   return updated;
 }
 
+export async function deleteServiceSessionItem(
+  tenantId: string,
+  sessionId: string,
+  itemId: string,
+  actingUserId: string,
+  input: DeleteServiceSessionItemInput,
+) {
+  const session = await prisma.serviceSession.findFirst({
+    where: { id: sessionId, tenantId, status: "COMPLETED" },
+    include: { barber: true, items: { include: { service: { select: { name: true } } } } },
+  });
+  if (!session) throw new NotFoundError("Sesion de servicio completada no encontrada");
+
+  const item = session.items.find((i) => i.id === itemId && !i.deletedAt);
+  if (!item) throw new NotFoundError("Servicio no encontrado en la sesion, o ya fue eliminado");
+
+  const remainingItems = session.items.filter((i) => i.id !== itemId && !i.deletedAt);
+  const newTotalPrice = remainingItems.reduce((sum, i) => sum + Number(i.priceAtStart), 0);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.serviceSessionItem.update({
+      where: { id: itemId },
+      data: { deleteReason: input.deleteReason, deletedAt: new Date(), deletedByUserId: actingUserId },
+    });
+
+    return tx.serviceSession.update({
+      where: { id: sessionId },
+      data: {
+        totalPrice: newTotalPrice,
+        ...(remainingItems.length === 0 ? { status: "DELETED" as const } : {}),
+      },
+    });
+  });
+
+  await recordAudit({
+    tenantId,
+    userId: actingUserId,
+    action: "SERVICE_ITEM_DELETED",
+    entityType: "ServiceSessionItem",
+    entityId: itemId,
+    metadata: {
+      deleteReason: input.deleteReason,
+      sessionId,
+      barberId: session.barberId,
+      barberName: session.barber.displayName,
+      serviceId: item.serviceId,
+      serviceName: item.service.name,
+      priceAtStart: item.priceAtStart.toFixed(2),
+      sessionFullyDeleted: remainingItems.length === 0,
+    },
+  });
+
+  return updated;
+}
+
 export async function getMyTodaySessions(tenantId: string, barberUserId: string) {
   const barber = await prisma.barber.findFirst({ where: { tenantId, userId: barberUserId } });
   if (!barber) throw new NotFoundError("Barbero no encontrado");
@@ -203,7 +262,9 @@ export async function getMyTodaySessions(tenantId: string, barberUserId: string)
 
   const sessions = await prisma.serviceSession.findMany({
     where: { barberId: barber.id, tenantId, startedAt: { gte: startOfDay } },
-    include: { items: { include: { service: { select: { name: true } } } } },
+    include: {
+      items: { where: { deletedAt: null }, include: { service: { select: { name: true } } } },
+    },
     orderBy: { startedAt: "desc" },
   });
 
@@ -249,7 +310,9 @@ export async function getMySummary(tenantId: string, barberUserId: string, perio
 
   const sessions = await prisma.serviceSession.findMany({
     where: { barberId: barber.id, tenantId, status: "COMPLETED", startedAt: { gte: from } },
-    include: { items: { include: { service: { select: { name: true } } } } },
+    include: {
+      items: { where: { deletedAt: null }, include: { service: { select: { name: true } } } },
+    },
   });
 
   const byServiceMap = new Map<

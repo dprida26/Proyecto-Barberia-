@@ -39,7 +39,7 @@ export async function getReportSummary(tenantId: string, filters: ReportFilters)
         paymentMethod: true,
         clientNameFree: true,
         barber: { select: { displayName: true } },
-        items: { include: { service: { select: { name: true } } } },
+        items: { where: { deletedAt: null }, include: { service: { select: { name: true } } } },
       },
     }),
   ]);
@@ -227,7 +227,7 @@ export async function getReportRows(tenantId: string, filters: ReportFilters) {
     where: baseWhere(tenantId, filters),
     include: {
       barber: { select: { displayName: true } },
-      items: { include: { service: { select: { name: true } } } },
+      items: { where: { deletedAt: null }, include: { service: { select: { name: true } } } },
     },
     orderBy: { startedAt: "asc" },
   });

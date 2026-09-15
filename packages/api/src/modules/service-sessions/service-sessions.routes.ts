@@ -1,8 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { cancelServiceSessionSchema, startServiceSessionSchema } from "@barberops/shared";
+import {
+  cancelServiceSessionSchema,
+  deleteServiceSessionItemSchema,
+  startServiceSessionSchema,
+} from "@barberops/shared";
 import { authGuard, roleGuard } from "../../common/guards";
 import {
   cancelServiceSession,
+  deleteServiceSessionItem,
   finishServiceSession,
   getMySummary,
   getMyTodaySessions,
@@ -42,6 +47,23 @@ export async function serviceSessionsRoutes(app: FastifyInstance) {
         id,
         request.user.sub,
         request.user.role === "ADMIN",
+        body,
+      );
+      return { data: session };
+    },
+  );
+
+  app.post(
+    "/service-sessions/:sessionId/items/:itemId/delete",
+    { preHandler: [authGuard, roleGuard(["ADMIN"])] },
+    async (request) => {
+      const { sessionId, itemId } = request.params as { sessionId: string; itemId: string };
+      const body = deleteServiceSessionItemSchema.parse(request.body);
+      const session = await deleteServiceSessionItem(
+        request.user.tenantId,
+        sessionId,
+        itemId,
+        request.user.sub,
         body,
       );
       return { data: session };

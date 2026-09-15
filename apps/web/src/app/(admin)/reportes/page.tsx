@@ -12,6 +12,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { PERIOD_LABELS, resolvePeriod } from "@/features/reports/period";
 import { useExportCsvUrl, useReportSummary } from "@/features/reports/use-report-summary";
 import { DateRangePicker } from "@/features/reports/DateRangePicker";
+import { ServiceHistorySection } from "@/features/reports/ServiceHistorySection";
 import { useTenantSettings } from "@/features/tenant-settings/use-tenant-settings";
 import { resolveLogoUrl } from "@/lib/env";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -280,6 +281,8 @@ export default function ReportesPage() {
               </CollapsibleContent>
             </Collapsible>
           </Card>
+
+          <ServiceHistorySection from={range.from} to={range.to} />
         </>
       )}
     </div>

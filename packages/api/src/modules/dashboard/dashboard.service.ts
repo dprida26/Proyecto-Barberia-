@@ -24,7 +24,7 @@ export async function getLiveSnapshot(tenantId: string) {
       select: {
         barberId: true,
         totalPrice: true,
-        items: { select: { priceAtStart: true, commissionPercent: true } },
+        items: { where: { deletedAt: null }, select: { priceAtStart: true, commissionPercent: true } },
       },
     }),
   ]);

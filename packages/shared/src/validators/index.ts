@@ -73,6 +73,11 @@ export const cancelServiceSessionSchema = z.object({
 });
 export type CancelServiceSessionInput = z.infer<typeof cancelServiceSessionSchema>;
 
+export const deleteServiceSessionItemSchema = z.object({
+  deleteReason: z.string().trim().min(10, "El motivo debe tener al menos 10 caracteres").max(300),
+});
+export type DeleteServiceSessionItemInput = z.infer<typeof deleteServiceSessionItemSchema>;
+
 export const updateTenantSettingsSchema = z.object({
   name: z.string().min(2).max(80).optional(),
   phone: z.string().max(30).optional(),

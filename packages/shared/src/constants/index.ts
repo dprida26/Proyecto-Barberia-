@@ -4,7 +4,7 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const BARBER_STATUS = ["AVAILABLE", "WAITING", "IN_SERVICE"] as const;
 export type BarberStatus = (typeof BARBER_STATUS)[number];
 
-export const SERVICE_SESSION_STATUS = ["IN_SERVICE", "COMPLETED", "CANCELLED"] as const;
+export const SERVICE_SESSION_STATUS = ["IN_SERVICE", "COMPLETED", "CANCELLED", "DELETED"] as const;
 export type ServiceSessionStatus = (typeof SERVICE_SESSION_STATUS)[number];
 
 export const PAYMENT_METHODS = ["CASH", "TRANSFER"] as const;
@@ -14,6 +14,8 @@ export const AUDIT_ACTIONS = [
   "SERVICE_STARTED",
   "SERVICE_FINISHED",
   "SERVICE_CANCELLED",
+  "SERVICE_DELETED",
+  "SERVICE_ITEM_DELETED",
   "SERVICE_CATALOG_CREATED",
   "SERVICE_CATALOG_UPDATED",
   "SERVICE_PRICE_CHANGED",
