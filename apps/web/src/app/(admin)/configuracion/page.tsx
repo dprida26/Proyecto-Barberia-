@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resolveLogoUrl } from "@/lib/env";
 import { useTenantSettings, useUpdateTenantSettings, useUploadLogo } from "@/features/tenant-settings/use-tenant-settings";
+import { NotificationSoundSettings } from "@/features/dashboard/NotificationSoundSettings";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
@@ -162,6 +163,8 @@ export default function ConfiguracionPage() {
           )}
         </CardContent>
       </Card>
+
+      <NotificationSoundSettings />
     </div>
   );
 }
