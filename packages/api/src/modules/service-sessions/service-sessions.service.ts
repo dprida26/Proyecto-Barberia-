@@ -6,6 +6,7 @@ import { SOCKET_EVENTS, computeEarnings, resolveEffectivePrice } from "@barberop
 import type {
   CancelServiceSessionInput,
   DeleteServiceSessionItemInput,
+  ServiceStartedEvent,
   StartServiceSessionInput,
 } from "@barberops/shared";
 
@@ -89,10 +90,11 @@ export async function startServiceSession(
   emitToTenant(tenantId, SOCKET_EVENTS.SERVICE_STARTED, {
     sessionId: session.id,
     barberId: barber.id,
+    barberName: barber.displayName,
     services: services.map((s) => ({ serviceId: s.id, serviceName: s.name })),
-    startedAt: session.startedAt,
+    startedAt: session.startedAt.toISOString(),
     clientNameFree: session.clientNameFree,
-  });
+  } satisfies ServiceStartedEvent);
 
   return session;
 }

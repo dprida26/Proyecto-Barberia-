@@ -103,6 +103,15 @@ export interface DashboardLiveSnapshot {
   };
 }
 
+export interface ServiceStartedEvent {
+  sessionId: string;
+  barberId: string;
+  barberName: string;
+  services: { serviceId: string; serviceName: string }[];
+  startedAt: string;
+  clientNameFree: string | null;
+}
+
 export interface ReportSummary {
   range: { from: string; to: string };
   totals: {
