@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Banknote, BarChart3, ChevronDown, Download, Receipt } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import type { ReportPeriod } from "@barberops/shared";
@@ -29,8 +28,6 @@ function formatDateTime(iso: string) {
     minute: "2-digit",
   });
 }
-
-const CHART_COLOR = "hsl(221 83% 53%)";
 
 export default function ReportesPage() {
   const [period, setPeriod] = useState<ReportPeriod>("THIS_WEEK");
@@ -129,32 +126,6 @@ export default function ReportesPage() {
               accent="warning"
             />
           </div>
-
-          <Card>
-            <Collapsible defaultOpen={false}>
-              <CollapsibleTrigger className="w-full [&[data-state=open]_.chevron]:rotate-180">
-                <CardHeader className="flex-row items-center justify-between space-y-0">
-                  <CardTitle>Servicios por tipo</CardTitle>
-                  <ChevronDown className="chevron h-4 w-4 text-muted-foreground transition-transform" />
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={data.byService}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-                        <XAxis dataKey="serviceName" tick={{ fontSize: 12 }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip />
-                        <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
 
           <div>
             <h2 className="mb-3 text-lg font-semibold tracking-tight">Produccion por barbero</h2>
@@ -255,32 +226,6 @@ export default function ReportesPage() {
               )}
             </div>
           </div>
-
-          <Card>
-            <Collapsible defaultOpen={false}>
-              <CollapsibleTrigger className="w-full [&[data-state=open]_.chevron]:rotate-180">
-                <CardHeader className="flex-row items-center justify-between space-y-0">
-                  <CardTitle>Horarios de mayor actividad</CardTitle>
-                  <ChevronDown className="chevron h-4 w-4 text-muted-foreground transition-transform" />
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={data.byHour}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-                        <XAxis dataKey="hour" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 12 }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip labelFormatter={(h) => `${h}:00`} />
-                        <Bar dataKey="servicesCount" fill={CHART_COLOR} radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
 
           <ServiceHistorySection from={range.from} to={range.to} />
         </>
