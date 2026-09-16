@@ -37,11 +37,62 @@ function formatDateTime(iso: string) {
   });
 }
 
+const TIMEZONE = "America/Asuncion";
+
+function dayKey(iso: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(new Date(iso));
+}
+
+function formatDayLabel(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const label = new Intl.DateTimeFormat("es-PY", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 const MIN_REASON_LENGTH = 10;
+
+interface Row {
+  session: ServiceSessionRow;
+  item: ServiceSessionItemRow;
+}
 
 interface Target {
   session: ServiceSessionRow;
   item: ServiceSessionItemRow;
+}
+
+interface DayGroup {
+  key: string;
+  label: string;
+  rows: Row[];
+  total: number;
+}
+
+function groupByDay(rows: Row[]): DayGroup[] {
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const key = dayKey(row.session.startedAt);
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(row);
+    } else {
+      groups.set(key, [row]);
+    }
+  }
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => (a < b ? 1 : -1))
+    .map(([key, dayRows]) => ({
+      key,
+      label: formatDayLabel(key),
+      rows: dayRows,
+      total: dayRows.reduce((sum, { item }) => sum + Number(item.priceAtStart), 0),
+    }));
 }
 
 export function ServiceHistorySection({ from, to }: { from: Date; to: Date }) {
@@ -79,6 +130,8 @@ export function ServiceHistorySection({ from, to }: { from: Date; to: Date }) {
       .map((item) => ({ session, item })),
   );
 
+  const dayGroups = groupByDay(rows);
+
   return (
     <Card>
       <Collapsible defaultOpen={false}>
@@ -95,74 +148,100 @@ export function ServiceHistorySection({ from, to }: { from: Date; to: Date }) {
             ) : rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">No hay servicios completados en este periodo.</p>
             ) : (
-              <>
-                {/* Mobile: stacked cards */}
-                <div data-testid="service-history-mobile" className="flex flex-col divide-y divide-border md:hidden">
-                  {rows.map(({ session, item }) => (
-                    <div key={item.id} className="flex items-start justify-between gap-3 py-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-foreground">{item.service.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {session.barber.displayName} · {formatDateTime(session.startedAt)}
-                        </p>
-                        {session.clientNameFree ? (
-                          <p className="text-sm text-muted-foreground">{session.clientNameFree}</p>
-                        ) : null}
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {formatGs(item.priceAtStart)}
-                        </p>
+              <div className="flex flex-col divide-y divide-border">
+                {dayGroups.map((group) => (
+                  <Collapsible key={group.key} defaultOpen={false} className="py-2 first:pt-0">
+                    <CollapsibleTrigger className="w-full [&[data-state=open]_.day-chevron]:rotate-180">
+                      <div className="flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-muted/50">
+                        <div className="text-left">
+                          <p className="font-medium text-foreground">{group.label}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {group.rows.length} {group.rows.length === 1 ? "servicio" : "servicios"} ·{" "}
+                            {formatGs(group.total)}
+                          </p>
+                        </div>
+                        <ChevronDown className="day-chevron h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Eliminar servicio"
-                        className="shrink-0 text-destructive hover:text-destructive"
-                        onClick={() => setTarget({ session, item })}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      {/* Mobile: stacked cards */}
+                      <div
+                        data-testid="service-history-mobile"
+                        className="flex flex-col divide-y divide-border md:hidden"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop: table */}
-                <div className="hidden md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Barbero</TableHead>
-                        <TableHead>Servicio</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Monto</TableHead>
-                        <TableHead className="text-right">Accion</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.map(({ session, item }) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{formatDateTime(session.startedAt)}</TableCell>
-                          <TableCell>{session.barber.displayName}</TableCell>
-                          <TableCell>{item.service.name}</TableCell>
-                          <TableCell>{session.clientNameFree || "-"}</TableCell>
-                          <TableCell>{formatGs(item.priceAtStart)}</TableCell>
-                          <TableCell className="text-right">
+                        {group.rows.map(({ session, item }) => (
+                          <div key={item.id} className="flex items-start justify-between gap-3 py-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-foreground">{item.service.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {session.barber.displayName} · {formatDateTime(session.startedAt)}
+                              </p>
+                              {session.clientNameFree ? (
+                                <p className="text-sm text-muted-foreground">{session.clientNameFree}</p>
+                              ) : null}
+                              <p className="mt-1 text-sm font-semibold text-foreground">
+                                {formatGs(item.priceAtStart)}
+                              </p>
+                            </div>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
+                              size="icon"
+                              aria-label="Eliminar servicio"
+                              className="shrink-0 text-destructive hover:text-destructive"
                               onClick={() => setTarget({ session, item })}
                             >
                               <Trash2 className="h-4 w-4" />
-                              Eliminar
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop: table */}
+                      <div className="hidden md:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Hora</TableHead>
+                              <TableHead>Barbero</TableHead>
+                              <TableHead>Servicio</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Monto</TableHead>
+                              <TableHead className="text-right">Accion</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {group.rows.map(({ session, item }) => (
+                              <TableRow key={item.id}>
+                                <TableCell>
+                                  {new Date(session.startedAt).toLocaleTimeString("es-PY", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </TableCell>
+                                <TableCell>{session.barber.displayName}</TableCell>
+                                <TableCell>{item.service.name}</TableCell>
+                                <TableCell>{session.clientNameFree || "-"}</TableCell>
+                                <TableCell>{formatGs(item.priceAtStart)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => setTarget({ session, item })}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Eliminar
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
             )}
           </CardContent>
         </CollapsibleContent>
